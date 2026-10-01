@@ -23,9 +23,11 @@ as the first-class surface.
   `~/.agents/skills/evolve/scripts/...` must stay pointing at the original
   un-prefixed paths.
 - `agents/<name>.md` — OpenCode-format subagents (`mode: subagent`,
-  `tools:` map) with `eh-` prefixed names. Installed by `install.sh` into each
-  platform's conventional agent directory; OpenCode agents cannot be registered
-  via the V2 plugin API.
+  `tools:` map) with `eh-` prefixed names and `model`/`variant` frontmatter
+  (OpenCode's agent loader requires a model). Installed by `install.sh` into
+  each platform's conventional agent directory: OpenCode gets the full file
+  (symlink), Claude Code and Antigravity get copies with the model lines
+  stripped. OpenCode agents cannot be registered via the V2 plugin API.
 - `commands/<name>.md` — OpenCode-format slash commands. Registered for
   OpenCode by the plugin; converted to TOML for agy by `install.sh`.
 - No generated directories or sub-packages (`core/`, `plugins/`,

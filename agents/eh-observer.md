@@ -6,6 +6,8 @@ description: >
   observations into the Obsidian vault. Use when an agent completes a task and
   needs to reflect on what worked, what failed, or what patterns emerged.
 mode: subagent
+model: opencode-go/deepseek-v4-flash
+variant: max
 tools:
   bash: true
   read: true

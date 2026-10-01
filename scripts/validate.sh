@@ -34,10 +34,13 @@ done
 echo "== Agents =="
 for agent in eh-evolver eh-observer; do
   f="$REPO_ROOT/agents/$agent.md"
-  if [[ -f "$f" ]] && grep -q "^name: $agent$" "$f" && grep -q "^mode: subagent" "$f"; then
-    ok "agent $agent"
+  if [[ -f "$f" && -s "$f" ]] \
+    && grep -q "^name: $agent$" "$f" \
+    && grep -q "^mode: subagent" "$f" \
+    && grep -q "^model: opencode-go/" "$f"; then
+    ok "agent $agent (non-empty, model set)"
   else
-    fail "agent frontmatter problem: $f"
+    fail "agent missing, empty, or malformed frontmatter: $f"
   fi
 done
 

@@ -75,6 +75,32 @@ cleanup_stale() {
   fi
 }
 
+# agent_install <platform> <agents_dir> — install agent definitions.
+# OpenCode needs the full file (model + variant required by its loader);
+# Claude Code and Antigravity get copies with the OpenCode-specific
+# model/variant lines stripped so their own model defaults apply.
+agent_install() {
+  local platform="$1" dir="$2"
+  $DRY_RUN || mkdir -p "$dir"
+  for agent in "${AGENTS[@]}"; do
+    if [[ "$platform" == "opencode" ]]; then
+      symlink "$REPO_ROOT/agents/$agent.md" "$dir/$agent.md"
+    else
+      if $DRY_RUN; then
+        echo "  would write: $dir/$agent.md (model stripped)"
+      else
+        # Replace a stale symlink (from an older install) — never write
+        # through it into the repository source.
+        if [[ -L "$dir/$agent.md" ]]; then
+          rm "$dir/$agent.md"
+        fi
+        sed -E '/^(model|variant):/d' "$REPO_ROOT/agents/$agent.md" > "$dir/$agent.md"
+        echo "  wrote: $dir/$agent.md (model stripped)"
+      fi
+    fi
+  done
+}
+
 install_opencode() {
   local plugins_dir="${HOME}/.config/opencode/plugins"
   local agents_dir="${HOME}/.config/opencode/agents"
@@ -83,14 +109,13 @@ install_opencode() {
   echo "  plugin: $REPO_ROOT -> $plugins_dir/evolution-harness (package.json + index.ts at repo root; registers skills + commands)"
   symlink "$REPO_ROOT" "$plugins_dir/evolution-harness"
   echo "  agents:"
-  for agent in "${AGENTS[@]}"; do
-    symlink "$REPO_ROOT/agents/$agent.md" "$agents_dir/$agent.md"
-  done
+  agent_install opencode "$agents_dir"
   for agent in "${OLD_AGENTS[@]}"; do
     cleanup_stale "$agents_dir" "$agent" ".md"
   done
-  echo "[opencode] Skills (eh-evolve, eh-state-sync, eh-run-notesmd-cli) and commands (/evolve-*) are registered by the plugin."
-  echo "[opencode] Restart OpenCode to load them."
+  echo "[opencode] Skills (eh-evolve, eh-state-sync, eh-run-notesmd-cli) and commands (/evolve-*) are registered by the plugin;"
+  echo "[opencode] commands also load from ~/.config/opencode/commands/ when present."
+  echo "[opencode] Restart OpenCode to load agents (agents are read at server start)."
 }
 
 install_claude() {
@@ -101,9 +126,8 @@ install_claude() {
   for skill in "${SKILLS[@]}"; do
     symlink "$REPO_ROOT/skills/$skill" "${HOME}/.claude/skills/$skill"
   done
-  for agent in "${AGENTS[@]}"; do
-    symlink "$REPO_ROOT/agents/$agent.md" "${HOME}/.claude/agents/$agent.md"
-  done
+  echo "  agents (model stripped for Claude Code):"
+  agent_install claude "${HOME}/.claude/agents"
   for cmd in "$REPO_ROOT/commands/"*.md; do
     symlink "$cmd" "${HOME}/.claude/commands/$(basename "$cmd")"
   done
@@ -124,9 +148,8 @@ install_agy() {
   for skill in "${SKILLS[@]}"; do
     symlink "$REPO_ROOT/skills/$skill" "${HOME}/.gemini/skills/$skill"
   done
-  for agent in "${AGENTS[@]}"; do
-    symlink "$REPO_ROOT/agents/$agent.md" "${HOME}/.gemini/agents/$agent.md"
-  done
+  echo "  agents (model stripped for Antigravity):"
+  agent_install agy "${HOME}/.gemini/agents"
   for skill in "${OLD_SKILLS[@]}"; do
     cleanup_stale "${HOME}/.gemini/skills" "$skill"
   done

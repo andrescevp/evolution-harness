@@ -22,7 +22,7 @@ Extracted from `~/.agents` — the same evolution system for `opencode`,
 | Component | Path | Contents |
 |---|---|---|
 | Skills | `skills/` | `eh-evolve` (observation → unit → cluster → proposal, with bundled `scripts/`), `eh-state-sync`, `eh-run-notesmd-cli` |
-| Agents | `agents/` | `eh-observer` (captures sanitized learnings), `eh-evolver` (synthesizes proposals) |
+| Agents | `agents/` | `eh-observer` (captures sanitized learnings), `eh-evolver` (synthesizes proposals). OpenCode-format frontmatter incl. `model: opencode-go/deepseek-v4-flash` (required by the OpenCode agent loader); `install.sh` strips the model lines for Claude Code and Antigravity |
 | Commands | `commands/` | `evolve-status`, `evolve-synthesize`, `evolve-promote` |
 | OpenCode V2 plugin | `index.ts` (+ `package.json`) | plugin entry at the repo root; registers the skills and commands at runtime |
 
@@ -71,7 +71,10 @@ directories, so edits in this repo apply immediately.
 > **Why agents are symlinked for OpenCode**: the V2 plugin API can register
 > skills (`ctx.skill.transform`) and commands (`ctx.command.transform`), but the
 > agent editor has no `add` — OpenCode agents must ship via the conventional
-> `~/.config/opencode/agents/` directory.
+> `~/.config/opencode/agents/` directory. Agent files need a `model` frontmatter
+> or the loader drops them — that's why the source agents carry
+> `model: opencode-go/deepseek-v4-flash`; `install.sh` strips it for
+> Claude/Antigravity copies so their own defaults apply.
 >
 > **Why agy commands are converted**: Antigravity/Gemini commands are TOML;
 > `install.sh` converts `commands/*.md` to `~/.gemini/commands/*.toml`.
