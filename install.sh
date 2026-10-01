@@ -57,10 +57,10 @@ install_opencode() {
   local src="$REPO_ROOT"
   local plugins_dir="${HOME}/.config/opencode/plugins"
   local agents_dir="${HOME}/.config/opencode/agents"
-  echo "[opencode] Installing V2 plugin + agents from $src"
+  echo "[opencode] Installing V2 plugin (repo root) + agents from $src"
   $DRY_RUN || mkdir -p "$plugins_dir" "$agents_dir"
-  echo "  plugin: $src/opencode-plugin -> $plugins_dir/evolution-harness (registers skills + commands)"
-  symlink "$src/opencode-plugin" "$plugins_dir/evolution-harness"
+  echo "  plugin: $src -> $plugins_dir/evolution-harness (package.json + index.ts at repo root; registers skills + commands)"
+  symlink "$src" "$plugins_dir/evolution-harness"
   echo "  agents:"
   for agent in evolver observer; do
     symlink "$src/agents/$agent.md" "$agents_dir/$agent.md"

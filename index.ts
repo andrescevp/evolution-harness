@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url"
 /**
  * evolution-harness — OpenCode V2 plugin.
  *
- * Registers the evolution harness content that lives at the repository root:
+ * The repository root IS the plugin package: index.ts bundles the plugin
+ * entry (package.json exposes "." -> ./index.ts), and the evolution harness
+ * content lives next to it:
  *   skills/<name>/SKILL.md   → ctx.skill  (evolve, state-sync, run-notesmd-cli)
  *   commands/<name>.md       → ctx.command (evolve-status, evolve-synthesize, evolve-promote)
  *
@@ -105,7 +107,7 @@ function resolveRoot(): string | undefined {
   const here = resolve(fileURLToPath(new URL(".", import.meta.url)))
   const candidates: string[] = []
   if (process.env.EVOLVE_HARNESS_ROOT) candidates.push(resolve(process.env.EVOLVE_HARNESS_ROOT))
-  candidates.push(resolve(here, ".."), resolve(here, "../.."))
+  candidates.push(here, resolve(here, ".."))
   return candidates.find((candidate) => {
     return EXPECTED_SKILLS.every((skill) => existsSync(join(candidate, "skills", skill, "SKILL.md")))
   })

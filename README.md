@@ -24,30 +24,29 @@ Extracted from `~/.agents` — the same evolution system for `opencode`,
 | Skills | `skills/` | `evolve` (observation → unit → cluster → proposal, with bundled `scripts/`), `state-sync`, `run-notesmd-cli` |
 | Agents | `agents/` | `observer` (captures sanitized learnings), `evolver` (synthesizes proposals) |
 | Commands | `commands/` | `evolve-status`, `evolve-synthesize`, `evolve-promote` |
-| OpenCode V2 plugin | `opencode-plugin/` | registers the skills and commands at runtime |
+| OpenCode V2 plugin | `index.ts` (+ `package.json`) | plugin entry at the repo root; registers the skills and commands at runtime |
 
 ## Repository layout
 
 ```
-evolution-harness/
+evolution-harness/             ← the OpenCode V2 plugin package (package.json + index.ts)
+├── index.ts                   ← Plugin.define: registers skills + commands at runtime
+├── package.json               ← name: evolution-harness, exports "." -> ./index.ts
 ├── skills/                    ← canonical skills (SKILL.md standard, platform-neutral)
 │   ├── evolve/                ← SKILL.md + scripts/ (capture.sh, create-unit.py, synthesize.py) + references/
 │   ├── state-sync/
 │   └── run-notesmd-cli/
 ├── agents/                    ← observer.md, evolver.md (OpenCode-format subagents)
 ├── commands/                  ← evolve-*.md slash commands (OpenCode format)
-├── opencode-plugin/           ← OpenCode V2 plugin package (@opencode/plugin)
-│   ├── src/index.ts           ← Plugin.define: registers skills + commands
-│   ├── package.json
-│   └── pnpm-lock.yaml
 ├── scripts/validate.sh        ← repository validation (layout, content, plugin integrity)
-├── scripts/test-plugin.mjs    ← functional smoke test for the V2 plugin (mock ctx)
+├── scripts/test-plugin.mjs    ← functional smoke test for the plugin (mock ctx)
 ├── install.sh                 ← detect clients and symlink into conventional dirs
 └── AGENTS.md                  ← repo conventions for contributors
 ```
 
-No generated directories, no per-platform copies: `skills/`, `agents/`, and
-`commands/` ARE the plugin content, consumed directly by every client.
+No generated directories, no per-platform copies, no sub-package: `skills/`,
+`agents/`, `commands/`, and the plugin entry (`index.ts`) all live at the
+repository root.
 
 ---
 
@@ -64,7 +63,7 @@ directories, so edits in this repo apply immediately.
 
 | Platform | What gets installed | Where |
 |---|---|---|
-| **OpenCode V2** | plugin (skills + commands registered at runtime), agents | `~/.config/opencode/plugins/evolution-harness` + `~/.config/opencode/agents/` |
+| **OpenCode V2** | the repo root as plugin (skills + commands registered at runtime), agents | `~/.config/opencode/plugins/evolution-harness` (symlink to repo) + `~/.config/opencode/agents/` |
 | **Claude Code** | skills, agents, commands | `~/.claude/{skills,agents,commands}/` |
 | **Antigravity (agy)** | skills, agents, TOML commands | `~/.gemini/{skills,agents,commands}/` |
 | **Codex** | skills | `~/.codex/skills/` |
@@ -125,24 +124,26 @@ Notes live in `./docs/evolve/{observations,units,clusters,proposals}/`
 
 ## OpenCode V2 plugin
 
-The plugin (`opencode-plugin/`) follows the
-[OpenCode plugin docs](https://opencode.ai/v2/docs/build/plugins/):
+The plugin follows the [OpenCode plugin docs](https://opencode.ai/v2/docs/build/plugins/),
+with the package at the repository root:
 
-- `Plugin.define({ id: "evolution-harness", setup })` — the only import is
+- `package.json` exposes `"." -> ./index.ts`; the only import is
   `@opencode/plugin`.
+- `index.ts` defines `Plugin.define({ id: "evolution-harness", setup })`.
 - Registers the three skills via `ctx.skill.transform` (frontmatter parsed,
   `path` set to the skill directory so bundled scripts stay resolvable).
 - Registers the three commands via `ctx.command.transform`; each command
   executes by prompting the session with the command body.
 - Locates the repository root from `$EVOLVE_HARNESS_ROOT`, the plugin
-  directory, or its parent — whichever holds `skills/` + `commands/`.
+  directory (`index.ts`'s own path), or its parent — whichever holds
+  `skills/` + `commands/`.
 
 Develop:
 
 ```bash
-cd opencode-plugin
-pnpm install       # installs @opencode/plugin + typescript
-pnpm typecheck     # tsc --noEmit
+pnpm install --ignore-scripts  # installs @opencode/plugin + typescript (pnpm 11 / supply-chain policy)
+pnpm typecheck                 # tsc --noEmit on index.ts
+node scripts/test-plugin.mjs   # functional smoke test (mock ctx)
 ```
 
 ---

@@ -1,16 +1,16 @@
 // test-plugin.mjs — functional smoke test for the OpenCode V2 plugin.
-// Imports opencode-plugin/src/index.ts (Node ≥ 23.6 type-stripping) and runs
-// setup() against a mock ctx that records registered skills and commands.
+// Imports ./index.ts (Node ≥ 23.6 type-stripping) and runs setup() against a
+// mock ctx that records registered skills and commands.
 // Usage: node scripts/test-plugin.mjs
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 
 const require = createRequire(import.meta.url)
-const pluginPath = fileURLToPath(new URL("../opencode-plugin/src/index.ts", import.meta.url))
+const pluginPath = fileURLToPath(new URL("../index.ts", import.meta.url))
 
 // Node's TS loader resolves bare imports via node_modules lookup from the
 // importing directory; make sure the plugin's node_modules is reachable.
-const pluginPkg = require("../opencode-plugin/node_modules/@opencode/plugin/package.json")
+const pluginPkg = require("../node_modules/@opencode/plugin/package.json")
 console.log(`[test] @opencode/plugin resolved: ${pluginPkg.version}`)
 
 const { default: plugin } = await import(pluginPath)

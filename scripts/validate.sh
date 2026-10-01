@@ -11,7 +11,7 @@ fail() { echo "FAIL: $*" >&2; failures=$((failures + 1)); }
 ok()   { echo "  ok: $*"; }
 
 echo "== Layout (no generated dirs) =="
-for leftover in core plugins .agents .claude-plugin scripts/build.sh; do
+for leftover in core plugins .agents .claude-plugin opencode-plugin scripts/build.sh; do
   if [[ -e "$REPO_ROOT/$leftover" ]]; then
     fail "leftover generated dir/file: $leftover"
   else
@@ -51,29 +51,29 @@ for cmd in evolve-status evolve-synthesize evolve-promote; do
   fi
 done
 
-echo "== OpenCode V2 plugin =="
-if jq -e . "$REPO_ROOT/opencode-plugin/package.json" >/dev/null 2>&1; then
+echo "== OpenCode V2 plugin (repo root) =="
+if jq -e . "$REPO_ROOT/package.json" >/dev/null 2>&1; then
   ok "package.json valid JSON"
 else
-  fail "invalid opencode-plugin/package.json"
+  fail "invalid package.json"
 fi
-for f in "$REPO_ROOT/opencode-plugin/src/index.ts" "$REPO_ROOT/opencode-plugin/tsconfig.json"; do
+for f in "$REPO_ROOT/index.ts" "$REPO_ROOT/tsconfig.json"; do
   [[ -f "$f" ]] && ok "plugin file: $f" || fail "missing plugin file: $f"
 done
-grep -q 'Plugin.define' "$REPO_ROOT/opencode-plugin/src/index.ts" \
+grep -q 'Plugin.define' "$REPO_ROOT/index.ts" \
   && ok "plugin defines Plugin.define" || fail "plugin does not use Plugin.define"
-grep -q '"@opencode/plugin"' "$REPO_ROOT/opencode-plugin/package.json" \
+grep -q '"@opencode/plugin"' "$REPO_ROOT/package.json" \
   && ok "plugin depends on @opencode/plugin" || fail "@opencode/plugin dependency missing"
 
 echo "== Plugin functional smoke test =="
-if command -v node >/dev/null 2>&1 && [[ -d "$REPO_ROOT/opencode-plugin/node_modules" ]]; then
+if command -v node >/dev/null 2>&1 && [[ -d "$REPO_ROOT/node_modules" ]]; then
   if node "$REPO_ROOT/scripts/test-plugin.mjs" >/dev/null 2>&1; then
     ok "plugin registers skills + commands from repo root (test-plugin.mjs)"
   else
     fail "plugin smoke test failed — run: node scripts/test-plugin.mjs"
   fi
 else
-  echo "  skip: node or opencode-plugin/node_modules not available (run pnpm install first)"
+  echo "  skip: node or node_modules not available (run pnpm install first)"
 fi
 
 echo "== Hygiene =="
@@ -82,10 +82,10 @@ if find "$REPO_ROOT" -name "__pycache__" -type d | grep -q .; then
 else
   ok "no __pycache__ directories"
 fi
-if [[ -d "$REPO_ROOT/opencode-plugin/node_modules" ]]; then
+if [[ -d "$REPO_ROOT/node_modules" ]]; then
   ok "node_modules present (dev only)"
 else
-  ok "node_modules absent (run pnpm install in opencode-plugin/ to develop)"
+  ok "node_modules absent (run pnpm install to develop)"
 fi
 
 echo ""
