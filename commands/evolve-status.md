@@ -2,7 +2,7 @@
 description: Show current evolution units, confidence levels, and synthesis status
 ---
 
-Load the `evolve` skill and read the evolve vault at `./docs/evolve/` and report current state:
+Load the `eh-evolve` skill and read the evolve vault at `./docs/evolve/` and report current state:
 1. Count observations, units, clusters, and proposals
 2. List top units by confidence (top 5)
 3. List domain distribution (units per domain)

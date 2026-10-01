@@ -21,8 +21,8 @@ Extracted from `~/.agents` — the same evolution system for `opencode`,
 
 | Component | Path | Contents |
 |---|---|---|
-| Skills | `skills/` | `evolve` (observation → unit → cluster → proposal, with bundled `scripts/`), `state-sync`, `run-notesmd-cli` |
-| Agents | `agents/` | `observer` (captures sanitized learnings), `evolver` (synthesizes proposals) |
+| Skills | `skills/` | `eh-evolve` (observation → unit → cluster → proposal, with bundled `scripts/`), `eh-state-sync`, `eh-run-notesmd-cli` |
+| Agents | `agents/` | `eh-observer` (captures sanitized learnings), `eh-evolver` (synthesizes proposals) |
 | Commands | `commands/` | `evolve-status`, `evolve-synthesize`, `evolve-promote` |
 | OpenCode V2 plugin | `index.ts` (+ `package.json`) | plugin entry at the repo root; registers the skills and commands at runtime |
 
@@ -33,10 +33,10 @@ evolution-harness/             ← the OpenCode V2 plugin package (package.json 
 ├── index.ts                   ← Plugin.define: registers skills + commands at runtime
 ├── package.json               ← name: evolution-harness, exports "." -> ./index.ts
 ├── skills/                    ← canonical skills (SKILL.md standard, platform-neutral)
-│   ├── evolve/                ← SKILL.md + scripts/ (capture.sh, create-unit.py, synthesize.py) + references/
-│   ├── state-sync/
-│   └── run-notesmd-cli/
-├── agents/                    ← observer.md, evolver.md (OpenCode-format subagents)
+│   ├── eh-evolve/             ← SKILL.md + scripts/ (capture.sh, create-unit.py, synthesize.py) + references/
+│   ├── eh-state-sync/
+│   └── eh-run-notesmd-cli/
+├── agents/                    ← eh-observer.md, eh-evolver.md (OpenCode-format subagents)
 ├── commands/                  ← evolve-*.md slash commands (OpenCode format)
 ├── scripts/validate.sh        ← repository validation (layout, content, plugin integrity)
 ├── scripts/test-plugin.mjs    ← functional smoke test for the plugin (mock ctx)
@@ -101,14 +101,14 @@ Without `notesmd-cli`, the evolve scripts fall back to direct file writes.
 
 The evolution loop, in any client:
 
-1. **Capture** — after meaningful sessions, ask `observer` to record what worked
+1. **Capture** — after meaningful sessions, ask `eh-observer` to record what worked
    (or run `capture.sh` directly):
    ```bash
    bash scripts/capture.sh "build-agent" "implemented TDD workflow" \
      "Created tests before implementation for feature X" \
      "All tests passed, user confirmed approach was correct"
    ```
-2. **Distill** — `evolver` (or `create-unit.py`) turns observations into
+2. **Distill** — `eh-evolver` (or `create-unit.py`) turns observations into
    confidence-weighted units (`0.3` tentative → `0.9` certain).
 3. **Synthesize** — `/evolve-synthesize` clusters units by domain and generates
    proposals in `./docs/evolve/proposals/`.

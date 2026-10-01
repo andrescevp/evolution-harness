@@ -33,7 +33,7 @@ const commandNames = registered.commands.map((c) => c.name).sort()
 console.log(`[test] skills  : ${skillIds.join(", ")}`)
 console.log(`[test] commands: ${commandNames.join(", ")}`)
 
-const expectSkills = ["evolve", "run-notesmd-cli", "state-sync"]
+const expectSkills = ["eh-evolve", "eh-run-notesmd-cli", "eh-state-sync"]
 const expectCommands = ["evolve-promote", "evolve-status", "evolve-synthesize"]
 const assertSame = (got, want) => {
   if (got.length !== want.length || got.some((v, i) => v !== want[i])) {
@@ -43,8 +43,8 @@ const assertSame = (got, want) => {
 assertSame(skillIds, expectSkills)
 assertSame(commandNames, expectCommands)
 
-const evolve = registered.skills.find((s) => s.id === "evolve")
-if (!evolve.path.endsWith("skills/evolve")) throw new Error(`bad skill path: ${evolve.path}`)
+const evolve = registered.skills.find((s) => s.id === "eh-evolve")
+if (!evolve.path.endsWith("skills/eh-evolve")) throw new Error(`bad skill path: ${evolve.path}`)
 if (!evolve.content.includes("The Evolution Model")) throw new Error(`skill content missing body`)
 if (!evolve.content.includes("Skill base directory")) throw new Error(`skill content missing bundle note`)
 

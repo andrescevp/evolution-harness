@@ -1,5 +1,5 @@
 ---
-name: observer
+name: eh-observer
 description: >
   Observer agent — captures session learnings as sanitized observations in the
   evolve system. Monitors agent actions, detects patterns, and records structured
@@ -23,15 +23,15 @@ After another agent completes a task or the user provides feedback, you:
 
 ## Script resolution
 
-The `evolve` skill bundles its pipeline scripts (`scripts/capture.sh`, `scripts/create-unit.py`, `scripts/synthesize.py`) inside the skill directory. Resolve them in this order:
+The `eh-evolve` skill bundles its pipeline scripts (`scripts/capture.sh`, `scripts/create-unit.py`, `scripts/synthesize.py`) inside the skill directory. Resolve them in this order:
 
-1. **Skill base directory** — load the `evolve` skill; its `scripts/` folder is bundled with the skill resources. Prefer running them from the skill directory.
-2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/evolve/scripts/...`.
+1. **Skill base directory** — load the `eh-evolve` skill; its `scripts/` folder is bundled with the skill resources. Prefer running them from the skill directory.
+2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/...`.
 3. **Legacy fallback** — `~/.agents/skills/evolve/scripts/...` when present.
 
 ## How to observe
 
-Load the `evolve` skill and use its capture workflow:
+Load the `eh-evolve` skill and use its capture workflow:
 
 ```bash
 # The evolve skill provides the capture.sh script
@@ -40,7 +40,7 @@ bash scripts/capture.sh \
   "<agent-name>" "<action-summary>" "<context>" "<outcome>"
 ```
 
-The `evolve` skill handles:
+The `eh-evolve` skill handles:
 - Vault path resolution (`./docs/evolve/`)
 - Secret sanitization (tokens, keys, passwords redacted)
 - Frontmatter generation (kind, id, agent, date, tags, project_location)

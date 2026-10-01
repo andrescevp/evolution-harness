@@ -1,5 +1,5 @@
 ---
-name: run-notesmd-cli
+name: eh-run-notesmd-cli
 description: >
   Use this skill when managing an Obsidian vault from the command line using
   `notesmd-cli` — creating, reading, updating, moving, and deleting notes,
@@ -46,7 +46,7 @@ If Obsidian is installed, vaults are auto-detected. For headless environments, r
 notesmd-cli add-vault /path/to/vault --set-default
 ```
 
-The vault path defaults to `{project_root}/docs/` (see evolve skill). Override with `--vault "{name}"` per command.
+The vault path defaults to `{project_root}/docs/` (see eh-evolve skill). Override with `--vault "{name}"` per command.
 
 ## Architecture
 

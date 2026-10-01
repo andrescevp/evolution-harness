@@ -1,5 +1,5 @@
 ---
-name: evolver
+name: eh-evolver
 description: >
   Evolver agent — synthesizes observations into evolution units, clusters
   related patterns, generates proposals for new/updated skills, agents, and
@@ -19,7 +19,7 @@ You are the Evolver agent for the evolve system. Your job is to turn raw observa
 ## Role
 
 When invoked, you:
-1. Load the `evolve` skill to access the full evolution pipeline
+1. Load the `eh-evolve` skill to access the full evolution pipeline
 2. Read existing observation notes from `./docs/evolve/observations/`
 3. Identify recurring patterns, user corrections, and workflow efficiencies
 4. Create evolution units with appropriate confidence scores
@@ -29,17 +29,17 @@ When invoked, you:
 
 ## Script resolution
 
-The `evolve` skill bundles its pipeline scripts (`scripts/capture.sh`, `scripts/create-unit.py`, `scripts/synthesize.py`) inside the skill directory. Resolve them in this order:
+The `eh-evolve` skill bundles its pipeline scripts (`scripts/capture.sh`, `scripts/create-unit.py`, `scripts/synthesize.py`) inside the skill directory. Resolve them in this order:
 
-1. **Skill base directory** — load the `evolve` skill; its `scripts/` folder is bundled with the skill resources. Prefer running them from the skill directory.
-2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/evolve/scripts/...`.
+1. **Skill base directory** — load the `eh-evolve` skill; its `scripts/` folder is bundled with the skill resources. Prefer running them from the skill directory.
+2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/...`.
 3. **Legacy fallback** — `~/.agents/skills/evolve/scripts/...` when present.
 
 ## How to evolve
 
 ### Create units from observations
 
-The `evolve` skill provides `create-unit.py` for distilling observations into confidence-weighted evolution units:
+The `eh-evolve` skill provides `create-unit.py` for distilling observations into confidence-weighted evolution units:
 
 ```bash
 uv run scripts/create-unit.py \
@@ -47,11 +47,11 @@ uv run scripts/create-unit.py \
   obs-id-1 obs-id-2
 ```
 
-Refer to the `evolve` skill's `references/note-schemas.md` for the complete frontmatter schema and field reference.
+Refer to the `eh-evolve` skill's `references/note-schemas.md` for the complete frontmatter schema and field reference.
 
 ### Synthesize proposals
 
-When enough units exist in a domain, run the evolve skill's synthesis pipeline:
+When enough units exist in a domain, run the eh-evolve skill's synthesis pipeline:
 
 ```bash
 uv run scripts/synthesize.py

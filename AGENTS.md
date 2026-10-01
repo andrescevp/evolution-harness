@@ -12,9 +12,14 @@ as the first-class surface.
   dependency is `@opencode/plugin`. Do not move the plugin into a subfolder.
 - `skills/<slug>/` — canonical SKILL.md skills (SKILL.md + bundled `scripts/`
   + `references/`). Platform-neutral; shared by every client.
+  **Convention: all skill and agent names are prefixed with `eh-`**
+  (`eh-evolve`, `eh-state-sync`, `eh-run-notesmd-cli`, `eh-evolver`,
+  `eh-observer`). New evolution-harness skills/agents must follow the prefix;
+  commands keep the bare `evolve-*` naming.
 - `agents/<name>.md` — OpenCode-format subagents (`mode: subagent`,
-  `tools:` map). Installed by `install.sh` into each platform's conventional
-  agent directory; OpenCode agents cannot be registered via the V2 plugin API.
+  `tools:` map) with `eh-` prefixed names. Installed by `install.sh` into each
+  platform's conventional agent directory; OpenCode agents cannot be registered
+  via the V2 plugin API.
 - `commands/<name>.md` — OpenCode-format slash commands. Registered for
   OpenCode by the plugin; converted to TOML for agy by `install.sh`.
 - No generated directories or sub-packages (`core/`, `plugins/`,

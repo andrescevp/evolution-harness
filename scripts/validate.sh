@@ -20,7 +20,7 @@ for leftover in core plugins .agents .claude-plugin opencode-plugin scripts/buil
 done
 
 echo "== Skills =="
-for skill in evolve state-sync run-notesmd-cli; do
+for skill in eh-evolve eh-state-sync eh-run-notesmd-cli; do
   f="$REPO_ROOT/skills/$skill/SKILL.md"
   if [[ -f "$f" && $(head -1 "$f") == "---" ]] && grep -q "^name: $skill$" "$f"; then
     ok "skill $skill"
@@ -28,11 +28,11 @@ for skill in evolve state-sync run-notesmd-cli; do
     fail "missing/invalid skill: $f"
   fi
 done
-[[ -x "$REPO_ROOT/skills/evolve/scripts/capture.sh" ]] && ok "evolve capture.sh executable" \
+[[ -x "$REPO_ROOT/skills/eh-evolve/scripts/capture.sh" ]] && ok "eh-evolve capture.sh executable" \
   || fail "capture.sh missing or not executable"
 
 echo "== Agents =="
-for agent in evolver observer; do
+for agent in eh-evolver eh-observer; do
   f="$REPO_ROOT/agents/$agent.md"
   if [[ -f "$f" ]] && grep -q "^name: $agent$" "$f" && grep -q "^mode: subagent" "$f"; then
     ok "agent $agent"

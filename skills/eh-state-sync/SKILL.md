@@ -1,5 +1,5 @@
 ---
-name: state-sync
+name: eh-state-sync
 description: >
   Update knowledge management systems and relational markdown documentation to
   reflect architecture changes made during a development cycle — identify new,
@@ -28,7 +28,7 @@ metadata:
   - Update any architecture decision records or design docs in the project
    - If an Obsidian vault is configured (`OBSIDIAN_VAULT` or `./docs/`), update relevant notes
 - Use the `create-documentation` skill for Obsidian/markdown formatting conventions when applicable
-- If the evolve system is active, capture significant learnings via the `observer` agent
+- If the evolve system is active, capture significant learnings via the `eh-observer` agent
 - Do not modify source code — documentation only
 
 ## Change Detection

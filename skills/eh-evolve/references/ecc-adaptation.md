@@ -2,7 +2,7 @@
 
 ## Background
 
-ECC (Evolutionary Cognitive Cycle) was the predecessor to the current `evolve` skill. It used a different note structure, tag scheme, and pipeline. This document maps ECC concepts to the current evolve system for migration and reference.
+ECC (Evolutionary Cognitive Cycle) was the predecessor to the current `eh-evolve` skill. It used a different note structure, tag scheme, and pipeline. This document maps ECC concepts to the current evolve system for migration and reference.
 
 ## Concept Mapping
 

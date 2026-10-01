@@ -1,5 +1,5 @@
 ---
-name: evolve
+name: eh-evolve
 description: >
   Use this skill when an agent needs to capture learnings, reflect on sessions,
   evolve its behavior, or improve the repository's skills/agents/commands based
@@ -109,7 +109,7 @@ Review generated proposals in `./docs/evolve/proposals/`. Apply manually or with
 
 ## Gotchas
 
-- **notesmd-cli does not require Obsidian running** — the run-notesmd-cli skill works headless. Scripts write directly to vault files as fallback if notesmd-cli is unavailable.
+- **notesmd-cli does not require Obsidian running** — the eh-run-notesmd-cli skill works headless. Scripts write directly to vault files as fallback if notesmd-cli is unavailable.
 - **Secrets are sanitized** by capture.sh (tokens, passwords, API keys redacted)
 - **Confidence decays** if a unit is never reinforced; review stale units periodically
 - **Scope defaults to project** — promote explicitly when pattern is cross-project

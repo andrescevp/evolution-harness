@@ -5,10 +5,17 @@
 #
 # Everything is installed as symlinks into each client's conventional
 # directories — no copies, so changes in this repo apply immediately.
+# Stale symlinks created by previous versions of this installer (old
+# un-prefixed names) are removed when they point into this repository.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 DRY_RUN=false
+
+SKILLS=(eh-evolve eh-state-sync eh-run-notesmd-cli)
+AGENTS=(eh-evolver eh-observer)
+OLD_SKILLS=(evolve state-sync run-notesmd-cli)
+OLD_AGENTS=(evolver observer)
 
 usage() {
   cat <<EOF
@@ -18,7 +25,7 @@ Usage: $0 [OPTIONS]
 
 Options:
   --help           Show this help message
-  --dry-run        Show what would be installed without installing
+  --dry-run        Preview what would be installed without installing
   --client NAME    Install only for a specific client
                    (opencode|claude|agy|codex)
 
@@ -53,54 +60,81 @@ symlink() { # src dest label
   echo "  linked: $(basename "$2")"
 }
 
+# cleanup_stale <dir> <name> [extension] — remove old-name symlinks that
+# point into this repository (never touches unrelated files).
+cleanup_stale() {
+  local dir="$1" name="$2" ext="${3:-}"
+  local path="$dir/$name$ext"
+  if [[ -L "$path" ]] && [[ "$(readlink "$path")" == "$REPO_ROOT"* ]]; then
+    if $DRY_RUN; then
+      echo "  would remove stale link: $path"
+    else
+      rm "$path"
+      echo "  removed stale link: $path"
+    fi
+  fi
+}
+
 install_opencode() {
-  local src="$REPO_ROOT"
   local plugins_dir="${HOME}/.config/opencode/plugins"
   local agents_dir="${HOME}/.config/opencode/agents"
-  echo "[opencode] Installing V2 plugin (repo root) + agents from $src"
+  echo "[opencode] Installing V2 plugin (repo root) + agents from $REPO_ROOT"
   $DRY_RUN || mkdir -p "$plugins_dir" "$agents_dir"
-  echo "  plugin: $src -> $plugins_dir/evolution-harness (package.json + index.ts at repo root; registers skills + commands)"
-  symlink "$src" "$plugins_dir/evolution-harness"
+  echo "  plugin: $REPO_ROOT -> $plugins_dir/evolution-harness (package.json + index.ts at repo root; registers skills + commands)"
+  symlink "$REPO_ROOT" "$plugins_dir/evolution-harness"
   echo "  agents:"
-  for agent in evolver observer; do
-    symlink "$src/agents/$agent.md" "$agents_dir/$agent.md"
+  for agent in "${AGENTS[@]}"; do
+    symlink "$REPO_ROOT/agents/$agent.md" "$agents_dir/$agent.md"
   done
-  echo "[opencode] Skills (evolve, state-sync, run-notesmd-cli) and commands (/evolve-*) are registered by the plugin."
+  for agent in "${OLD_AGENTS[@]}"; do
+    cleanup_stale "$agents_dir" "$agent" ".md"
+  done
+  echo "[opencode] Skills (eh-evolve, eh-state-sync, eh-run-notesmd-cli) and commands (/evolve-*) are registered by the plugin."
   echo "[opencode] Restart OpenCode to load them."
 }
 
 install_claude() {
-  local src="$REPO_ROOT"
   echo "[claude] Symlinking skills, agents, commands"
   for sub in skills agents commands; do
     $DRY_RUN || mkdir -p "${HOME}/.claude/$sub"
   done
-  for skill in evolve state-sync run-notesmd-cli; do
-    symlink "$src/skills/$skill" "${HOME}/.claude/skills/$skill"
+  for skill in "${SKILLS[@]}"; do
+    symlink "$REPO_ROOT/skills/$skill" "${HOME}/.claude/skills/$skill"
   done
-  for agent in evolver observer; do
-    symlink "$src/agents/$agent.md" "${HOME}/.claude/agents/$agent.md"
+  for agent in "${AGENTS[@]}"; do
+    symlink "$REPO_ROOT/agents/$agent.md" "${HOME}/.claude/agents/$agent.md"
   done
-  for cmd in "$src/commands/"*.md; do
+  for cmd in "$REPO_ROOT/commands/"*.md; do
     symlink "$cmd" "${HOME}/.claude/commands/$(basename "$cmd")"
+  done
+  for skill in "${OLD_SKILLS[@]}"; do
+    cleanup_stale "${HOME}/.claude/skills" "$skill"
+  done
+  for agent in "${OLD_AGENTS[@]}"; do
+    cleanup_stale "${HOME}/.claude/agents" "$agent" ".md"
   done
   echo "[claude] Restart Claude Code; skills load as /evolution-harness:<skill>."
 }
 
 install_agy() {
-  local src="$REPO_ROOT"
   echo "[agy] Symlinking skills, agents; converting commands to TOML"
   for sub in skills agents commands; do
     $DRY_RUN || mkdir -p "${HOME}/.gemini/$sub"
   done
-  for skill in evolve state-sync run-notesmd-cli; do
-    symlink "$src/skills/$skill" "${HOME}/.gemini/skills/$skill"
+  for skill in "${SKILLS[@]}"; do
+    symlink "$REPO_ROOT/skills/$skill" "${HOME}/.gemini/skills/$skill"
   done
-  for agent in evolver observer; do
-    symlink "$src/agents/$agent.md" "${HOME}/.gemini/agents/$agent.md"
+  for agent in "${AGENTS[@]}"; do
+    symlink "$REPO_ROOT/agents/$agent.md" "${HOME}/.gemini/agents/$agent.md"
+  done
+  for skill in "${OLD_SKILLS[@]}"; do
+    cleanup_stale "${HOME}/.gemini/skills" "$skill"
+  done
+  for agent in "${OLD_AGENTS[@]}"; do
+    cleanup_stale "${HOME}/.gemini/agents" "$agent" ".md"
   done
   if ! $DRY_RUN; then
-    for cmd in "$src/commands/"*.md; do
+    for cmd in "$REPO_ROOT/commands/"*.md; do
       local name
       name="$(basename "$cmd" .md)"
       local desc
@@ -122,11 +156,13 @@ install_agy() {
 }
 
 install_codex() {
-  local src="$REPO_ROOT"
   echo "[codex] Symlinking skills (Codex has no agent/command files)"
   $DRY_RUN || mkdir -p "${HOME}/.codex/skills"
-  for skill in evolve state-sync run-notesmd-cli; do
-    symlink "$src/skills/$skill" "${HOME}/.codex/skills/$skill"
+  for skill in "${SKILLS[@]}"; do
+    symlink "$REPO_ROOT/skills/$skill" "${HOME}/.codex/skills/$skill"
+  done
+  for skill in "${OLD_SKILLS[@]}"; do
+    cleanup_stale "${HOME}/.codex/skills" "$skill"
   done
   echo "[codex] Restart Codex or start a new session to load the skills."
 }
@@ -171,7 +207,7 @@ done
 cat <<EOF
 Optional: export EVOLVE_HARNESS_ROOT="$REPO_ROOT" in your shell profile so
 agents can always resolve the bundled evolve scripts
-(\$EVOLVE_HARNESS_ROOT/skills/evolve/scripts/...).
+(\$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/...).
 
 Installation complete.
 EOF

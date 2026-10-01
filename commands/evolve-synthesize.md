@@ -2,13 +2,13 @@
 description: Cluster evolution units and generate synthesis proposals for new artifacts
 ---
 
-Run the synthesis pipeline via the `evolve` skill:
+Run the synthesis pipeline via the `eh-evolve` skill:
 1. Load all candidate evolution units from `./docs/evolve/units/`
 2. Cluster by domain (workflow, code-style, testing, git, debugging, docs, etc.)
 3. Generate synthesis proposals in `./docs/evolve/proposals/`
 4. Report clusters found and proposals generated
 
-The `evolve` skill bundles `scripts/synthesize.py`. Resolve the skill's base directory as documented in the skill (skill resources, `$EVOLVE_HARNESS_ROOT/skills/evolve/scripts/`, or legacy `~/.agents/skills/evolve/scripts/`), then run:
+The `eh-evolve` skill bundles `scripts/synthesize.py`. Resolve the skill's base directory as documented in the skill (skill resources, `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/`, or legacy `~/.agents/skills/evolve/scripts/`), then run:
 
 ```bash
 uv run scripts/synthesize.py

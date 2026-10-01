@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url"
  * The repository root IS the plugin package: index.ts bundles the plugin
  * entry (package.json exposes "." -> ./index.ts), and the evolution harness
  * content lives next to it:
- *   skills/<name>/SKILL.md   → ctx.skill  (evolve, state-sync, run-notesmd-cli)
+ *   skills/<name>/SKILL.md   → ctx.skill  (eh-evolve, eh-state-sync, eh-run-notesmd-cli)
  *   commands/<name>.md       → ctx.command (evolve-status, evolve-synthesize, evolve-promote)
  *
  * Agents cannot be registered through the plugin API (AgentEditor has no
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url"
  */
 
 const PLUGIN_ID = "evolution-harness"
-const EXPECTED_SKILLS = ["evolve", "state-sync", "run-notesmd-cli"]
+const EXPECTED_SKILLS = ["eh-evolve", "eh-state-sync", "eh-run-notesmd-cli"]
 
 interface ParsedFrontmatter {
   name?: string
