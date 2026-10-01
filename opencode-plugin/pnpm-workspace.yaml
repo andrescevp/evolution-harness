@@ -1,0 +1,5 @@
+onlyBuiltDependencies: []
+ignoredBuiltDependencies:
+  - msgpackr-extract
+allowBuilds:
+  msgpackr-extract: set this to true or false

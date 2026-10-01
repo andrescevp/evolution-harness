@@ -2,97 +2,83 @@
 
 **Multi-platform plugin** for [Antigravity CLI (agy)](https://antigravity.google),
 [OpenAI Codex](https://developers.openai.com/codex/), [Claude Code](https://docs.anthropic.com/en/docs/claude-code),
-and [OpenCode](https://opencode.ai) that makes agents **learn, remember, and
-evolve** across sessions.
+and — first-class — [OpenCode V2](https://opencode.ai/v2/docs/build/plugins/) that makes agents
+**learn, remember, and evolve** across sessions.
 
-The harness captures session learnings as structured observations, distills
-them into confidence-weighted evolution units, clusters them by domain, and
-generates synthesis proposals for new or updated skills, agents, and commands.
-All evolution notes are stored in an Obsidian vault (`./docs/evolve/`) and are
-managed headless via `notesmd-cli` (or direct file writes when the CLI is
+The harness captures session learnings as structured observations, distills them
+into confidence-weighted evolution units, clusters them by domain, and generates
+synthesis proposals for new or updated skills, agents, and commands. All
+evolution notes live in an Obsidian vault (`./docs/evolve/`) and are managed
+headless via `notesmd-cli` (with direct file-write fallback when the CLI is
 absent).
 
-Extracted from `~/.agents` — the same evolution system (`evolve`, `state-sync`,
-`run-notesmd-cli` skills; `observer`/`evolver` sub-agents; `evolve-*` commands)
-that powers the personal agent harness.
+Extracted from `~/.agents` — the same evolution system for `opencode`,
+`claude`, `agy`, and `codex`.
 
 ---
 
-## Content
+## Content (at the repository root)
 
-### Skills
-
-| Skill | Purpose |
-|---|---|
-| [`evolve`](core/skills/evolve/SKILL.md) | Full evolution pipeline: observation → unit → cluster → proposal. Bundled scripts: `scripts/capture.sh`, `scripts/create-unit.py`, `scripts/synthesize.py`. |
-| [`state-sync`](core/skills/state-sync/SKILL.md) | Sync AGENTS.md, architecture docs, and vault notes after a dev cycle; captures learnings into the evolve system. |
-| [`run-notesmd-cli`](core/skills/run-notesmd-cli/SKILL.md) | Headless Obsidian vault management via `notesmd-cli` (create/search/read/update notes, frontmatter, daily notes). |
-
-### Sub-agents
-
-| Agent | Role |
-|---|---|
-| `observer` | After a task, captures sanitized observations into `./docs/evolve/observations/` |
-| `evolver` | Synthesizes observations into units and generates proposals for new/updated artifacts |
-
-### Commands
-
-| Command | Purpose |
-|---|---|
-| `evolve-status` | Report observations/units/clusters/proposals state, top confidence units, stale units |
-| `evolve-synthesize` | Run the synthesis pipeline (cluster units → proposals) |
-| `evolve-promote` | Promote project-scoped units to global scope when cross-project evidence exists |
-
----
+| Component | Path | Contents |
+|---|---|---|
+| Skills | `skills/` | `evolve` (observation → unit → cluster → proposal, with bundled `scripts/`), `state-sync`, `run-notesmd-cli` |
+| Agents | `agents/` | `observer` (captures sanitized learnings), `evolver` (synthesizes proposals) |
+| Commands | `commands/` | `evolve-status`, `evolve-synthesize`, `evolve-promote` |
+| OpenCode V2 plugin | `opencode-plugin/` | registers the skills and commands at runtime |
 
 ## Repository layout
 
 ```
 evolution-harness/
-├── core/                     ← Canonical, platform-neutral content (source of truth)
-│   ├── skills/               ← evolve/, state-sync/, run-notesmd-cli/
-│   ├── agents/               ← evolver.body.md, observer.body.md + agents.json (frontmatter per platform)
-│   └── commands/             ← evolve-*.md (OpenCode format)
-├── plugins/                  ← Per-platform packages (generated + committed)
-│   ├── agy/                  ← plugin.json · skills/ · agents/ · commands/*.toml
-│   ├── codex/                ← plugin.json (Agent Plugins) · skills/
-│   ├── claude/               ← .claude-plugin/plugin.json · skills/ · agents/
-│   └── opencode/             ← package.json · skills/ · agents/ · commands/
-├── .agents/plugins/marketplace.json   ← Codex / ChatGPT marketplace manifest
-├── .claude-plugin/marketplace.json    ← Claude Code marketplace manifest
-├── scripts/
-│   ├── build.sh              ← Assemble plugins/ from core/ (deterministic)
-│   └── validate.sh           ← Validate all manifests and components
-├── install.sh                ← Auto-detect clients and install
-└── AGENTS.md                 ← Repo conventions for contributors
+├── skills/                    ← canonical skills (SKILL.md standard, platform-neutral)
+│   ├── evolve/                ← SKILL.md + scripts/ (capture.sh, create-unit.py, synthesize.py) + references/
+│   ├── state-sync/
+│   └── run-notesmd-cli/
+├── agents/                    ← observer.md, evolver.md (OpenCode-format subagents)
+├── commands/                  ← evolve-*.md slash commands (OpenCode format)
+├── opencode-plugin/           ← OpenCode V2 plugin package (@opencode/plugin)
+│   ├── src/index.ts           ← Plugin.define: registers skills + commands
+│   ├── package.json
+│   └── pnpm-lock.yaml
+├── scripts/validate.sh        ← repository validation (layout, content, plugin integrity)
+├── scripts/test-plugin.mjs    ← functional smoke test for the V2 plugin (mock ctx)
+├── install.sh                 ← detect clients and symlink into conventional dirs
+└── AGENTS.md                  ← repo conventions for contributors
 ```
+
+No generated directories, no per-platform copies: `skills/`, `agents/`, and
+`commands/` ARE the plugin content, consumed directly by every client.
 
 ---
 
 ## Installation
 
-From the repo root:
-
 ```bash
-bash install.sh                # detects opencode / claude / agy / codex
+bash install.sh                # auto-detects opencode / claude / agy / codex
 bash install.sh --dry-run      # preview only
-bash install.sh --client claude
+bash install.sh --client opencode
 ```
 
-Per platform:
+Everything is installed as **symlinks** into each client's conventional
+directories, so edits in this repo apply immediately.
 
-| Platform | Command |
-|---|---|
-| **OpenCode** | `bash install.sh --client opencode` — symlinks `skills/`, `agents/`, `commands/` into `~/.config/opencode/` |
-| **Claude Code** | `claude plugin marketplace add "$PWD" && claude plugin install evolution-harness@evolution-harness` (manifest: `.claude-plugin/marketplace.json`) |
-| **Antigravity (agy)** | `agy plugin install ./plugins/agy` — skills/agents/commands namespaced `/evolution-harness:*` |
-| **Codex / ChatGPT** | `codex plugin marketplace add "$PWD" && codex plugin add evolution-harness --marketplace evolution-harness` (manifest: `.agents/plugins/marketplace.json`) |
+| Platform | What gets installed | Where |
+|---|---|---|
+| **OpenCode V2** | plugin (skills + commands registered at runtime), agents | `~/.config/opencode/plugins/evolution-harness` + `~/.config/opencode/agents/` |
+| **Claude Code** | skills, agents, commands | `~/.claude/{skills,agents,commands}/` |
+| **Antigravity (agy)** | skills, agents, TOML commands | `~/.gemini/{skills,agents,commands}/` |
+| **Codex** | skills | `~/.codex/skills/` |
 
-All three repo marketplaces are committed so the same checkout works as a
-Claude marketplace, a Codex marketplace, and a source for agy/OpenCode.
+> **Why agents are symlinked for OpenCode**: the V2 plugin API can register
+> skills (`ctx.skill.transform`) and commands (`ctx.command.transform`), but the
+> agent editor has no `add` — OpenCode agents must ship via the conventional
+> `~/.config/opencode/agents/` directory.
+>
+> **Why agy commands are converted**: Antigravity/Gemini commands are TOML;
+> `install.sh` converts `commands/*.md` to `~/.gemini/commands/*.toml`.
 
-Optional: export `EVOLVE_HARNESS_ROOT` to the repo path so agents can resolve
-the bundled scripts from any project:
+Optional: export `EVOLVE_HARNESS_ROOT` so agents resolve the bundled scripts
+from any project:
 
 ```bash
 export EVOLVE_HARNESS_ROOT="$HOME/workspace/evolution-harness"
@@ -108,8 +94,7 @@ The skills manage the vault headless via `notesmd-cli`:
 notesmd-cli add-vault /path/to/vault --set-default   # optional, headless setup
 ```
 
-Without `notesmd-cli`, the evolve scripts fall back to direct file writes —
-works everywhere.
+Without `notesmd-cli`, the evolve scripts fall back to direct file writes.
 
 ---
 
@@ -138,24 +123,40 @@ Notes live in `./docs/evolve/{observations,units,clusters,proposals}/`
 
 ---
 
+## OpenCode V2 plugin
+
+The plugin (`opencode-plugin/`) follows the
+[OpenCode plugin docs](https://opencode.ai/v2/docs/build/plugins/):
+
+- `Plugin.define({ id: "evolution-harness", setup })` — the only import is
+  `@opencode/plugin`.
+- Registers the three skills via `ctx.skill.transform` (frontmatter parsed,
+  `path` set to the skill directory so bundled scripts stay resolvable).
+- Registers the three commands via `ctx.command.transform`; each command
+  executes by prompting the session with the command body.
+- Locates the repository root from `$EVOLVE_HARNESS_ROOT`, the plugin
+  directory, or its parent — whichever holds `skills/` + `commands/`.
+
+Develop:
+
+```bash
+cd opencode-plugin
+pnpm install       # installs @opencode/plugin + typescript
+pnpm typecheck     # tsc --noEmit
+```
+
+---
+
 ## Development
 
-- **Source of truth is `core/`.** Edit skills/agents/commands there — keep them
-  platform-neutral (no `~/.agents` or client-specific paths; scripts are
-  resolved from the skill base dir, `$EVOLVE_HARNESS_ROOT`, or legacy
-  `~/.agents` fallback).
-- After changing `core/`, regenerate every plugin and validate:
-  ```bash
-  bash scripts/build.sh
-  bash scripts/validate.sh
-  ```
-- Manifests (`plugins/*/plugin.json`), plugin READMEs, `install.sh`, and
-  `scripts/` are hand-authored and never overwritten by `build.sh`.
-- Per-agent frontmatter (tools lists per platform) lives in
-  `core/agents/agents.json`.
-
-Generated artifacts are committed so the repo works out of the box — rebuild
-only when `core/` changes.
+- **Edit content directly at the root** — `skills/`, `agents/`, `commands/`.
+  Keep everything platform-neutral: `SKILL.md` frontmatter uses `name` +
+  `description`; no client-specific syntax; scripts resolve from the skill
+  base dir → `$EVOLVE_HARNESS_ROOT` → legacy `~/.agents` fallback.
+- After changes run `bash scripts/validate.sh` (must pass before committing);
+  it includes the plugin smoke test (`node scripts/test-plugin.mjs`).
+- Agent tool lists match OpenCode format (`mode: subagent`, `tools:` map);
+  the installer keeps per-client semantics at the symlink/conversion layer.
 
 ## License
 

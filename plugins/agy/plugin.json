@@ -1,9 +1,0 @@
-{
-  "name": "evolution-harness",
-  "version": "1.0.0",
-  "description": "Evolution harness — evolve, state-sync and notesmd-cli skills with observer/evolver sub-agents. Captures session learnings into an Obsidian vault and evolves agent behavior.",
-  "author": { "name": "Andres" },
-  "skills": "./skills/",
-  "agents": "./agents/",
-  "commands": "./commands/"
-}

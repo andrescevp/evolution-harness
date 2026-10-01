@@ -1,48 +1,48 @@
 # AGENTS.md — evolution-harness repository conventions
 
 This repository packages the **evolution harness** (from `~/.agents`) as a
-multi-platform plugin for agy (Antigravity), codex, claude, and opencode.
+multi-platform plugin for agy (Antigravity), codex, claude, and opencode —
+with the OpenCode V2 plugin (`opencode-plugin/`) as the first-class surface.
 
 ## Layout & invariants
 
-- `core/` is the **canonical source of truth**:
-  - `core/skills/<slug>/` — SKILL.md + bundled `scripts/` + `references/`
-  - `core/agents/<name>.body.md` — platform-neutral agent bodies
-  - `core/agents/agents.json` — per-platform frontmatter (tools, descriptions)
-  - `core/commands/*.md` — OpenCode-format slash commands
-- `plugins/<platform>/` are **generated from `core/`** by `scripts/build.sh`:
-  - `agy/` (plugin.json, skills/, agents/, commands/*.toml),
-    `codex/` (plugin.json, skills/), `claude/` (.claude-plugin/plugin.json,
-    skills/, agents/), `opencode/` (package.json, skills/, agents/, commands/)
-- **Manifests and per-platform READMEs are hand-authored** in `plugins/` and
-  must not be regenerated or moved: `build.sh` only touches `skills/`,
-  `agents/`, and `commands/` subdirectories.
-- Marketplace manifests are committed and hand-authored:
-  `.agents/plugins/marketplace.json` (Codex/ChatGPT) and
-  `.claude-plugin/marketplace.json` (Claude Code). Keep `name` keys in sync
-  with the plugin name (`evolution-harness`).
+- `skills/<slug>/` — canonical SKILL.md skills (SKILL.md + bundled `scripts/`
+  + `references/`). Platform-neutral; shared by every client.
+- `agents/<name>.md` — OpenCode-format subagents (`mode: subagent`,
+  `tools:` map). Installed by `install.sh` into each platform's conventional
+  agent directory; OpenCode agents cannot be registered via the V2 plugin API.
+- `commands/<name>.md` — OpenCode-format slash commands. Registered for
+  OpenCode by the plugin; converted to TOML for agy by `install.sh`.
+- `opencode-plugin/` — OpenCode V2 plugin package. It must keep
+  `Plugin.define` as the default export and only depend on `@opencode/plugin`.
+  It resolves the repo root via `$EVOLVE_HARNESS_ROOT` → plugin parent dirs.
+- No generated directories (`core/`, `plugins/`, marketplaces) — content at
+  the root IS the plugin. Do not reintroduce per-platform copies.
+- `install.sh` only creates symlinks (plus agy TOML conversion) — no copies.
 
 ## Workflow
 
-1. Edit content in `core/` only.
-2. Regenerate: `bash scripts/build.sh`
-3. Validate: `bash scripts/validate.sh` (must pass before committing)
-4. Commit generated plugins alongside core changes.
+1. Edit content in `skills/`, `agents/`, or `commands/` directly.
+2. Run `bash scripts/validate.sh` — must pass before committing.
+3. Plugin code changes: `cd opencode-plugin && pnpm typecheck`.
 
 ## Content rules
 
-- Skills must stay platform-neutral: `SKILL.md` frontmatter uses `name` and
-  `description`; body must avoid client-specific syntax.
-- Never hardcode `~/.agents` paths. Script resolution order documented in the
-  skill: skill base directory → `$EVOLVE_HARNESS_ROOT/...` → legacy fallback.
-- Agent tool lists per platform live in `core/agents/agents.json`:
-  `opencode` (map), `agy` (flat array), `claude` (comma list).
+- Skills stay platform-neutral: `SKILL.md` frontmatter uses `name` and
+  `description`; body avoids client-specific syntax.
+- Script resolution order documented in skills/agents: skill base directory →
+  `$EVOLVE_HARNESS_ROOT/...` → legacy `~/.agents` fallback. Never hardcode
+  `~/.agents` as the only path.
 - Respect the global coding rules: TDD where applicable, files ≤ 300 lines,
   clean code.
 - Never commit secrets, `.env*`, or credentials (see .gitignore).
+- Keep `opencode-plugin` pinned to a `@opencode/plugin` version that passes
+  local supply-chain policies.
 
 ## Platform validation references
 
-- Claude: `claude plugin validate ./plugins/claude --strict`
-- agy: `agy plugin validate ./plugins/agy`
-- Codex/OpenCode: structural checks in `scripts/validate.sh`
+- OpenCode: `opencode-plugin/` typechecks via `pnpm typecheck`
+- Layout/content: `bash scripts/validate.sh`
+- agy: `agy plugin validate` does not apply (no plugin.json) — symlinked
+  skills/agents are the native convention
+- Claude: skills/agents/commands load from `~/.claude/` on session start

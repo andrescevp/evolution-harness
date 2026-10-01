@@ -1,0 +1,23 @@
+{
+  "name": "evolution-harness",
+  "version": "1.0.0",
+  "description": "OpenCode V2 plugin — registers the evolution harness skills (evolve, state-sync, run-notesmd-cli) and commands (evolve-status, evolve-synthesize, evolve-promote) from the repository root.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.20"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
