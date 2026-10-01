@@ -1,0 +1,20 @@
+{
+  "name": "evolution-harness",
+  "interface": {
+    "displayName": "Evolution Harness"
+  },
+  "plugins": [
+    {
+      "name": "evolution-harness",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

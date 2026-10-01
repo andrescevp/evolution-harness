@@ -1,0 +1,6 @@
+{
+  "name": "evolution-harness",
+  "version": "1.0.0",
+  "description": "Evolution harness — skills, sub-agents, and commands for the evolve system. Installed via conventional OpenCode directories (symlinked by install.sh).",
+  "type": "module"
+}
