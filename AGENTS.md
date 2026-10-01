@@ -16,6 +16,12 @@ as the first-class surface.
   (`eh-evolve`, `eh-state-sync`, `eh-run-notesmd-cli`, `eh-evolver`,
   `eh-observer`). New evolution-harness skills/agents must follow the prefix;
   commands keep the bare `evolve-*` naming.
+- **The upstream `~/.agents` harness keeps its un-prefixed names**
+  (`evolve`, `state-sync`, `run-notesmd-cli`, `evolver`, `observer`) — never
+  rename, prefix, or symlink content there. This repo's `eh-` prefix applies
+  only to its own files; legacy fallback references to
+  `~/.agents/skills/evolve/scripts/...` must stay pointing at the original
+  un-prefixed paths.
 - `agents/<name>.md` — OpenCode-format subagents (`mode: subagent`,
   `tools:` map) with `eh-` prefixed names. Installed by `install.sh` into each
   platform's conventional agent directory; OpenCode agents cannot be registered
