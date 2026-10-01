@@ -1,107 +1,84 @@
 # evolution-harness
 
-**Multi-platform plugin** for [OpenCode V2](https://opencode.ai/v2/docs/build/plugins/) (first-class),
-[Antigravity CLI (agy)](https://antigravity.google), [OpenAI Codex](https://developers.openai.com/codex/),
-and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that makes agents
-**learn, remember, and evolve** across sessions.
+**An OpenCode V2 plugin that makes your agent learn, remember, and evolve across sessions.**
 
-The harness captures session learnings as structured observations, distills them
-into confidence-weighted evolution units, clusters them by domain, and generates
-synthesis proposals for new or updated skills, agents, and commands. All
-evolution notes live in an Obsidian vault (`./docs/evolve/`) and are managed
-headless via `notesmd-cli` (with direct file-write fallback when the CLI is
-absent).
+The harness captures what worked (and what didn't) during your sessions, stores it
+as structured notes in an Obsidian vault (`./docs/evolve/`), distills them into
+confidence-weighted evolution units, and synthesizes proposals that improve the
+harness itself — new or updated skills, agents, and commands.
 
-Published at **github.com/andrescevp/evolution-harness** · current release **v1.0.0**.
+Everything ships as a single OpenCode V2 plugin package: **skills**, **agents**,
+and **commands** at the repository root, registered by `index.ts` at runtime.
+The same content can also be installed into Claude Code, Antigravity CLI, and
+Codex (see [Additional clients](#additional-clients)).
+
+Published at **github.com/andrescevp/evolution-harness** · tag **v1.0.0**.
 
 ---
 
-## Content
+## The harness at a glance
 
-| Component | Path | Contents |
+| Component | Name | What it does |
 |---|---|---|
-| Skills | `skills/` | `eh-evolve` (observation → unit → cluster → proposal, with bundled `scripts/`), `eh-state-sync`, `eh-run-notesmd-cli` |
-| Agents | `agents/` | `eh-observer` (captures sanitized learnings), `eh-evolver` (synthesizes proposals). OpenCode-format frontmatter incl. `model: opencode-go/deepseek-v4-flash` — **required** by the OpenCode agent loader; `install.sh` strips the model lines when installing for Claude Code / Antigravity |
-| Commands | `commands/` | `evolve-status`, `evolve-synthesize`, `evolve-promote` |
-| OpenCode V2 plugin | `index.ts` (+ `package.json`) | plugin entry at the repo root; registers the skills and commands at runtime |
+| Skill | `eh-evolve` | Full evolution pipeline: observation → unit → cluster → proposal. Bundled scripts: `capture.sh`, `create-unit.py`, `synthesize.py` |
+| Skill | `eh-state-sync` | Syncs `AGENTS.md`, architecture docs, and vault notes after a dev cycle; feeds learnings into the pipeline |
+| Skill | `eh-run-notesmd-cli` | Manages the evolution vault headless via `notesmd-cli` (no Obsidian GUI needed) |
+| Agent | `eh-observer` | After a task, captures sanitized observations into `./docs/evolve/observations/` |
+| Agent | `eh-evolver` | Turns observations into units and generates proposals for new/updated artifacts |
+| Command | `/evolve-status` | Reports observations/units/clusters/proposals state, top confidence units, stale units |
+| Command | `/evolve-synthesize` | Runs the synthesis pipeline (cluster units → proposals) |
+| Command | `/evolve-promote` | Promotes project-scoped units to global scope when cross-project evidence exists |
 
 ## Repository layout
 
 ```
-evolution-harness/             ← the OpenCode V2 plugin package (package.json + index.ts)
+evolution-harness/             ← the OpenCode V2 plugin package
 ├── index.ts                   ← Plugin.define: registers skills + commands at runtime
 ├── package.json               ← name: evolution-harness, exports "." -> ./index.ts
-├── skills/                    ← canonical skills (SKILL.md standard, platform-neutral)
-│   ├── eh-evolve/             ← SKILL.md + scripts/ (capture.sh, create-unit.py, synthesize.py) + references/
+├── skills/                    ← canonical SKILL.md skills (platform-neutral standard)
+│   ├── eh-evolve/             ← SKILL.md + scripts/ + references/
 │   ├── eh-state-sync/
 │   └── eh-run-notesmd-cli/
-├── agents/                    ← eh-observer.md, eh-evolver.md (OpenCode-format subagents)
-├── commands/                  ← evolve-*.md slash commands (OpenCode format)
+├── agents/                    ← eh-observer.md, eh-evolver.md (OpenCode agent format)
+├── commands/                  ← evolve-*.md (OpenCode slash-command format)
 ├── scripts/validate.sh        ← repository validation (layout, content, plugin integrity)
 ├── scripts/test-plugin.mjs    ← functional smoke test for the plugin (mock ctx)
-├── install.sh                 ← detect clients and install into conventional dirs
+├── install.sh                 ← installs the same content into other clients (optional)
 └── AGENTS.md                  ← repo conventions for contributors
 ```
 
-No generated directories, no per-platform copies, no sub-package: `skills/`,
-`agents/`, `commands/`, and the plugin entry (`index.ts`) all live at the
-repository root.
+No build step, no generated directories, no copies: the plugin, skills, agents,
+and commands live at the repository root and are consumed from there.
 
 ---
 
-## Installation
+## Installation (OpenCode V2)
 
-### OpenCode V2 (primary — hard clone)
-
-A **git clone** of the published repository lives directly in the plugin folder;
-the plugin, skills, and commands are served from it:
+A **git clone** of the published repository goes directly into OpenCode's plugin
+folder — the plugin, skills, and commands are served from it:
 
 ```bash
 git clone git@github.com:andrescevp/evolution-harness.git \
   ~/.config/opencode/plugins/evolution-harness
 cd ~/.config/opencode/plugins/evolution-harness
-pnpm install --ignore-scripts      # installs @opencode/plugin (see deps note below)
+pnpm install --ignore-scripts      # installs @opencode/plugin (see note)
 ln -sfn "$PWD/agents/eh-evolver.md" ~/.config/opencode/agents/eh-evolver.md
 ln -sfn "$PWD/agents/eh-observer.md" ~/.config/opencode/agents/eh-observer.md
 ```
 
-**Restart OpenCode** — plugins load at startup and agents are read at server
-start, so they only appear in new sessions.
+**Restart OpenCode.** Plugins load at startup and agents are read at server
+start, so the harness only appears in a new session.
 
-Dev-mode alternative (live edits without cloning): `bash install.sh --client opencode`
-symlinks the repo root into the plugin folder instead.
+Dev mode (live edits, no clone): `bash install.sh --client opencode` symlinks
+the repo root into the plugin folder instead.
 
-### Claude Code · Antigravity (agy) · Codex
-
-`install.sh` auto-detects the installed CLIs and installs the harness:
-
-```bash
-bash install.sh                # auto-detects opencode / claude / agy / codex
-bash install.sh --dry-run      # preview only
-bash install.sh --client claude
-```
-
-| Platform | What gets installed | Where |
-|---|---|---|
-| **OpenCode (dev mode)** | repo root as plugin (skills + commands at runtime), agents | `~/.config/opencode/plugins/evolution-harness` (symlink) + `~/.config/opencode/agents/` |
-| **Claude Code** | skills, agents (model stripped), commands | `~/.claude/{skills,agents,commands}/` |
-| **Antigravity (agy)** | skills, agents (model stripped), TOML commands | `~/.gemini/{skills,agents,commands}/` |
-| **Codex** | skills | `~/.codex/skills/` |
-
-> **Why agents are symlinked for OpenCode**: the V2 plugin API can register
-> skills (`ctx.skill.transform`) and commands (`ctx.command.transform`), but the
-> agent editor has no `add` — OpenCode agents must ship via the conventional
-> `~/.config/opencode/agents/` directory. Agent files need a `model` frontmatter
-> or the loader drops them (that's why `eh-evolver`/`eh-observer` carry
-> `model: opencode-go/deepseek-v4-flash`); `install.sh` strips it for
-> Claude/Antigravity copies so their own model defaults apply.
->
-> **Why agy commands are converted**: Antigravity/Gemini commands are TOML;
-> `install.sh` converts `commands/*.md` to `~/.gemini/commands/*.toml`.
->
-> **Deps note**: `pnpm install --ignore-scripts` is used because pnpm 11 blocks
-> dependency build scripts by default (supply-chain policy); nothing in this
-> package needs them. `@opencode/plugin` is pinned to `2.0.20` (policy-safe).
+> **Why agents are symlinked and not registered by the plugin**: the V2 plugin
+> API can register skills (`ctx.skill.transform`) and commands
+> (`ctx.command.transform`) but the agent editor has no `add` — OpenCode agents
+> must ship via the conventional `~/.config/opencode/agents/` directory. Agent
+> files also require a `model` frontmatter or the loader drops them, which is
+> why `eh-evolver`/`eh-observer` carry `model: opencode-go/deepseek-v4-flash`
+> (adjust to your provider of choice).
 
 Optional — let agents resolve the bundled scripts from any project:
 
@@ -111,7 +88,7 @@ export EVOLVE_HARNESS_ROOT="$HOME/.config/opencode/plugins/evolution-harness"
 
 ### Prerequisite for notes
 
-The skills manage the vault headless via `notesmd-cli`:
+The harness manages the vault headless via `notesmd-cli`:
 
 ```bash
 # Arch:      yay -S notesmd-cli-bin
@@ -119,22 +96,23 @@ The skills manage the vault headless via `notesmd-cli`:
 notesmd-cli add-vault /path/to/vault --set-default   # optional, headless setup
 ```
 
-Without `notesmd-cli`, the evolve scripts fall back to direct file writes.
+Without `notesmd-cli`, the evolve scripts fall back to direct file writes —
+everything still works.
 
 ---
 
-## Usage
+## Usage in OpenCode
 
-The evolution loop, in any client:
+The evolution loop:
 
-1. **Capture** — after meaningful sessions, ask `eh-observer` to record what worked
-   (or run `capture.sh` directly):
+1. **Capture** — after a meaningful session, ask `@eh-observer` to record what
+   worked (or run the skill's script directly):
    ```bash
    bash scripts/capture.sh "build-agent" "implemented TDD workflow" \
      "Created tests before implementation for feature X" \
      "All tests passed, user confirmed approach was correct"
    ```
-2. **Distill** — `eh-evolver` (or `create-unit.py`) turns observations into
+2. **Distill** — `@eh-evolver` (or `create-unit.py`) turns observations into
    confidence-weighted units (`0.3` tentative → `0.9` certain).
 3. **Synthesize** — `/evolve-synthesize` clusters units by domain and generates
    proposals in `./docs/evolve/proposals/`.
@@ -148,32 +126,51 @@ Notes live in `./docs/evolve/{observations,units,clusters,proposals}/`
 
 ---
 
-## OpenCode V2 plugin
+## How the plugin works
 
-The plugin follows the [OpenCode plugin docs](https://opencode.ai/v2/docs/build/plugins/),
-with the package at the repository root:
+Per the [OpenCode plugin docs](https://opencode.ai/v2/docs/build/plugins/):
 
 - `package.json` exposes `"." -> ./index.ts`; the only runtime import is
   `@opencode/plugin`.
 - `index.ts` defines `Plugin.define({ id: "evolution-harness", setup })`.
-- Registers the three skills via `ctx.skill.transform` (frontmatter parsed,
-  `path` set to the skill directory so bundled scripts stay resolvable).
-- Registers the three commands via `ctx.command.transform`; each command
-  executes by prompting the session with the command body.
-- Locates the repository root from `$EVOLVE_HARNESS_ROOT`, the plugin
+- **Skills** → `ctx.skill.transform`: frontmatter parsed from each
+  `skills/*/SKILL.md`, `path` set to the skill directory so bundled scripts and
+  references stay resolvable.
+- **Commands** → `ctx.command.transform`: each `commands/*.md` becomes a slash
+  command whose `execute` prompts the session with the command body.
+- The repository root is located from `$EVOLVE_HARNESS_ROOT`, the plugin
   directory (`index.ts`'s own path), or its parent — whichever holds
-  `skills/` + `commands/` (works identically from a clone or symlink).
+  `skills/` + `commands/` — so the plugin works identically from a clone or a
+  symlink.
+
+---
+
+## Additional clients
+
+The same root content installs into other agent CLIs via `install.sh`
+(auto-detects installed CLIs, or target one with `--client`):
+
+| Platform | Installed | Location |
+|---|---|---|
+| **Claude Code** | skills, agents (model stripped), commands | `~/.claude/{skills,agents,commands}/` |
+| **Antigravity (agy)** | skills, agents (model stripped), TOML commands | `~/.gemini/{skills,agents,commands}/` |
+| **Codex** | skills | `~/.codex/skills/` |
+
+Claude/Antigravity receive copies with the OpenCode-specific `model`/`variant`
+lines stripped so their own model defaults apply; Antigravity commands are
+converted to TOML (`~/.gemini/commands/*.toml`). Stale symlinks from previous
+installs are cleaned up automatically.
 
 ---
 
 ## Development & release workflow
 
-1. **Develop in a working copy** (e.g. `~/workspace/evolution-harness`):
-   edit `skills/`, `agents/`, `commands/`, or `index.ts` directly.
+1. **Develop in a working copy** (e.g. `~/workspace/evolution-harness`): edit
+   `skills/`, `agents/`, `commands/`, or `index.ts` directly.
 2. **Validate** before committing:
    ```bash
    bash scripts/validate.sh        # layout, content, frontmatter, plugin smoke test
-   pnpm typecheck                  # tsc --noEmit on index.ts (after pnpm install --ignore-scripts)
+   pnpm typecheck                  # tsc --noEmit (after pnpm install --ignore-scripts)
    node scripts/test-plugin.mjs    # functional smoke test (mock ctx)
    ```
 3. **Push & release**:
@@ -187,6 +184,10 @@ with the package at the repository root:
    git -C ~/.config/opencode/plugins/evolution-harness pull
    # or re-clone for a truly fresh install
    ```
+
+> **Deps note**: `pnpm install --ignore-scripts` is required because pnpm 11
+> blocks dependency build scripts by default (supply-chain policy); nothing in
+> this package needs them. `@opencode/plugin` is pinned to `2.0.20`.
 
 ## Naming conventions
 
