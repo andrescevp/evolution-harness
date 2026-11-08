@@ -7,14 +7,19 @@
     ".": "./index.ts"
   },
   "files": [
-    "index.ts"
+    "index.ts",
+    "skills",
+    "commands",
+    "agents"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "tsc --noEmit"
+    "build": "tsc -p tsconfig.skills.json",
+    "prepack": "tsc -p tsconfig.skills.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.skills.json --noEmit",
+    "test": "pnpm build && node --test skills/eh-evolve/dist/evals/*.test.js"
   },
   "dependencies": {
-    "@opencode/plugin": "2.0.20"
+    "@opencode/plugin": "2.2.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

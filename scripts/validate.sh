@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # validate.sh — validate the evolution-harness repository layout.
-# Checks content presence, frontmatter, plugin package integrity, and
-# that the simplified layout has no leftover generated directories.
+# Checks content presence, frontmatter, plugin package integrity, the
+# TypeScript skill build/evals, and that the layout has no leftover
+# generated sub-packages.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -28,8 +29,16 @@ for skill in eh-evolve eh-state-sync eh-run-notesmd-cli; do
     fail "missing/invalid skill: $f"
   fi
 done
-[[ -x "$REPO_ROOT/skills/eh-evolve/scripts/capture.sh" ]] && ok "eh-evolve capture.sh executable" \
-  || fail "capture.sh missing or not executable"
+[[ -f "$REPO_ROOT/skills/eh-evolve/scripts/capture.ts" ]] && ok "eh-evolve capture.ts source" \
+  || fail "capture.ts missing"
+
+echo "== Skill scripts are TypeScript only =="
+if find "$REPO_ROOT/skills" -type f \( -name '*.sh' -o -name '*.py' \) | grep -q .; then
+  fail "legacy shell/Python skill scripts found:"
+  find "$REPO_ROOT/skills" -type f \( -name '*.sh' -o -name '*.py' \) >&2
+else
+  ok "no .sh/.py files under skills/"
+fi
 
 echo "== Agents =="
 for agent in eh-evolver eh-observer; do
@@ -60,7 +69,7 @@ if jq -e . "$REPO_ROOT/package.json" >/dev/null 2>&1; then
 else
   fail "invalid package.json"
 fi
-for f in "$REPO_ROOT/index.ts" "$REPO_ROOT/tsconfig.json"; do
+for f in "$REPO_ROOT/index.ts" "$REPO_ROOT/tsconfig.json" "$REPO_ROOT/tsconfig.skills.json"; do
   [[ -f "$f" ]] && ok "plugin file: $f" || fail "missing plugin file: $f"
 done
 grep -q 'Plugin.define' "$REPO_ROOT/index.ts" \
@@ -70,13 +79,30 @@ grep -q '"@opencode/plugin"' "$REPO_ROOT/package.json" \
 
 echo "== Plugin functional smoke test =="
 if command -v node >/dev/null 2>&1 && [[ -d "$REPO_ROOT/node_modules" ]]; then
-  if node "$REPO_ROOT/scripts/test-plugin.mjs" >/dev/null 2>&1; then
-    ok "plugin registers skills + commands from repo root (test-plugin.mjs)"
+  if node "$REPO_ROOT/scripts/test-plugin.ts" >/dev/null 2>&1; then
+    ok "plugin registers skills + commands from repo root (test-plugin.ts)"
   else
-    fail "plugin smoke test failed — run: node scripts/test-plugin.mjs"
+    fail "plugin smoke test failed — run: node scripts/test-plugin.ts"
   fi
 else
   echo "  skip: node or node_modules not available (run pnpm install first)"
+fi
+
+echo "== Skill pipeline (TypeScript build + evals) =="
+if command -v node >/dev/null 2>&1 && [[ -x "$REPO_ROOT/node_modules/.bin/tsc" ]]; then
+  if (cd "$REPO_ROOT" && ./node_modules/.bin/tsc -p tsconfig.skills.json >/dev/null 2>&1); then
+    ok "skills/eh-evolve compiles to dist/ (tsc -p tsconfig.skills.json)"
+  else
+    fail "skill pipeline build failed — run: pnpm build"
+  fi
+  if [[ -f "$REPO_ROOT/skills/eh-evolve/dist/scripts/capture.js" ]] \
+    && node --test "$REPO_ROOT"/skills/eh-evolve/dist/evals/*.test.js >/dev/null 2>&1; then
+    ok "compiled skill evals pass (node --test dist/evals/*.test.js)"
+  else
+    fail "compiled skill evals failed — run: pnpm test"
+  fi
+else
+  echo "  skip: node/tsc not available (run pnpm install --ignore-scripts)"
 fi
 
 echo "== Hygiene =="

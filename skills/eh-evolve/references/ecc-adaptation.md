@@ -14,7 +14,7 @@ ECC (Evolutionary Cognitive Cycle) was the predecessor to the current `eh-evolve
 | `ecc_*.md` files | `evolve/<type>/<id>.md` | Flat `ecc_*` prefix replaced by subdirectory organization |
 | `confidence` 0–100 | `confidence` 0.0–1.0 | Scaled from integer percentage to float |
 | Global-only scope | `scope: project \| global` | Added project-level scope; global requires promotion |
-| Manual promotion | `synthesize.py` pipeline | Automated clustering replaces manual review |
+| Manual promotion | `synthesize.ts` pipeline | Automated clustering replaces manual review |
 
 ## Directory Structure Migration
 
@@ -96,23 +96,23 @@ created: 2026-05-28
 2. **Confidence as float** — Enables finer granularity and easier math for clustering averages.
 3. **Scope levels** — Patterns start as `project` and require cross-context evidence to promote to `global`, preventing premature generalization.
 4. **Tags for Dataview** — Structured `[evolve, type, topic/<slug>]` tags enable Obsidian Dataview queries across all note types.
-5. **Automated synthesis** — `synthesize.py` replaces manual review for initial clustering; human review only for the final proposal.
+5. **Automated synthesis** — `synthesize.ts` replaces manual review for initial clustering; human review only for the final proposal.
 
 ## Migration Script
 
 To migrate existing ECC notes from `~/MyVault/ecc_*` to `./docs/evolve/*`:
 
-```bash
-# This is a manual process — review each file after migration
-ECC_SRC="$HOME/MyVault"
-EVO_DST="./docs/evolve"
+```ts
+import { readdirSync } from "node:fs"
+import { join } from "node:path"
 
-# Migrate observations
-for f in "$ECC_SRC"/ecc_observations/*.md; do
-  [ -f "$f" ] || continue
-  # Read, transform frontmatter, write to new location
-  echo "Manual review needed: $f → $EVO_DST/observations/"
-done
+// This is a manual process — review each file after migration.
+const source = join(process.env.HOME ?? "", "MyVault", "ecc_observations")
+const destination = "./docs/evolve/observations"
+
+for (const file of readdirSync(source).filter((name) => name.endsWith(".md"))) {
+  console.log(`Manual review needed: ${join(source, file)} -> ${destination}/`)
+}
 ```
 
 > **Note:** Automatic migration is not provided because frontmatter schemas differ significantly. Manual review ensures no data loss and proper re-classification.

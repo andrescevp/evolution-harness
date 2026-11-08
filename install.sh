@@ -4,7 +4,8 @@
 # for each client found (opencode | claude | agy | codex).
 #
 # Everything is installed as symlinks into each client's conventional
-# directories — no copies, so changes in this repo apply immediately.
+# directories — no copies, so changes in this repo apply immediately. The
+# eh-evolve TypeScript pipeline is compiled to dist/ before linking.
 # Stale symlinks created by previous versions of this installer (old
 # un-prefixed names) are removed when they point into this repository.
 set -euo pipefail
@@ -58,6 +59,29 @@ symlink() { # src dest label
   fi
   ln -s "$1" "$2"
   echo "  linked: $(basename "$2")"
+}
+
+# build_skills — compile the eh-evolve TypeScript pipeline to dist/.
+# The skills symlink their source directories, so the compiled output must
+# exist before any client can run the scripts.
+build_skills() {
+  if $DRY_RUN; then
+    echo "[build] would compile skills/eh-evolve (pnpm build)"
+    return
+  fi
+  if [[ ! -x "$REPO_ROOT/node_modules/.bin/tsc" ]]; then
+    if command -v pnpm >/dev/null 2>&1; then
+      echo "[build] installing dev dependencies (pnpm install --ignore-scripts)"
+      (cd "$REPO_ROOT" && pnpm install --ignore-scripts)
+    else
+      echo "[build] warning: pnpm not found; run pnpm install --ignore-scripts && pnpm build manually"
+      return
+    fi
+  fi
+  if [[ -x "$REPO_ROOT/node_modules/.bin/tsc" ]]; then
+    echo "[build] compiling skills/eh-evolve (tsc -p tsconfig.skills.json)"
+    (cd "$REPO_ROOT" && "$REPO_ROOT/node_modules/.bin/tsc" -p tsconfig.skills.json)
+  fi
 }
 
 # cleanup_stale <dir> <name> [extension] — remove old-name symlinks that
@@ -216,6 +240,9 @@ echo "Repo root: $REPO_ROOT"
 $DRY_RUN && echo "DRY RUN — no changes will be made"
 echo ""
 
+build_skills
+echo ""
+
 for client in "${CLIENTS[@]}"; do
   case "$client" in
     opencode) install_opencode ;;
@@ -230,7 +257,7 @@ done
 cat <<EOF
 Optional: export EVOLVE_HARNESS_ROOT="$REPO_ROOT" in your shell profile so
 agents can always resolve the bundled evolve scripts
-(\$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/...).
+(\$EVOLVE_HARNESS_ROOT/skills/eh-evolve/dist/scripts/...).
 
 Installation complete.
 EOF

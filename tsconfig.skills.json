@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "rootDir": "skills/eh-evolve",
+    "outDir": "skills/eh-evolve/dist",
+    "types": ["node"],
+    "skipLibCheck": true,
+    "noEmitOnError": true,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "skills/eh-evolve/scripts/**/*.ts",
+    "skills/eh-evolve/evals/**/*.ts"
+  ]
+}

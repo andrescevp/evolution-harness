@@ -31,20 +31,22 @@ When invoked, you:
 
 ## Script resolution
 
-The `eh-evolve` skill bundles its pipeline scripts (`scripts/capture.sh`, `scripts/create-unit.py`, `scripts/synthesize.py`) inside the skill directory. Resolve them in this order:
+The `eh-evolve` skill bundles its pipeline sources (`scripts/capture.ts`, `scripts/create-unit.ts`, `scripts/synthesize.ts`) and the compiled runtime in `dist/scripts/`. Resolve them in this order:
 
-1. **Skill base directory** — load the `eh-evolve` skill; its `scripts/` folder is bundled with the skill resources. Prefer running them from the skill directory.
-2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/...`.
-3. **Legacy fallback** — `~/.agents/skills/evolve/scripts/...` when present.
+1. **Skill base directory** — load the `eh-evolve` skill; its `dist/scripts/` folder is bundled with the skill resources. Prefer running the compiled JavaScript from the skill directory.
+2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/dist/scripts/...`.
+3. **Legacy fallback** — `~/.agents/skills/evolve/scripts/...` when present (legacy shell/Python pipeline).
+
+If `dist/` is missing, run `pnpm install --ignore-scripts && pnpm build` from the harness repository root.
 
 ## How to evolve
 
 ### Create units from observations
 
-The `eh-evolve` skill provides `create-unit.py` for distilling observations into confidence-weighted evolution units:
+The `eh-evolve` skill provides `create-unit.ts` for distilling observations into confidence-weighted evolution units:
 
 ```bash
-uv run scripts/create-unit.py \
+node dist/scripts/create-unit.js \
   "<title>" "<action>" <confidence> "<domain>" "<scope>" \
   obs-id-1 obs-id-2
 ```
@@ -56,7 +58,7 @@ Refer to the `eh-evolve` skill's `references/note-schemas.md` for the complete f
 When enough units exist in a domain, run the eh-evolve skill's synthesis pipeline:
 
 ```bash
-uv run scripts/synthesize.py
+node dist/scripts/synthesize.js
 ```
 
 This clusters candidate units by domain, generates proposals in `./docs/evolve/proposals/`, and suggests artifact types (skill, agent, command).

@@ -25,11 +25,15 @@ metadata:
 ### Observation → Unit → Cluster → Proposal
 
 ```
-Session activity → capture.sh → observations/*.md
-observations/    → create-unit.py → units/*.md (confidence-weighted)
-units/           → synthesize.py → clusters/ + proposals/
+Session activity → capture.ts → observations/*.md
+observations/    → create-unit.ts → units/*.md (confidence-weighted)
+units/           → synthesize.ts → clusters/ + proposals/
 proposals/       → agent review → new/updated skills, agents, commands
 ```
+
+> The pipeline is written in TypeScript and compiled to `dist/scripts/*.js`.
+> Run the compiled JavaScript. On a fresh checkout build once from the
+> repository root: `pnpm install --ignore-scripts && pnpm build`.
 
 ### Evolution Units
 
@@ -80,7 +84,8 @@ Tags use a simple YAML list format for easy parsing and Obsidian Dataview compat
 After a meaningful session event:
 
 ```bash
-bash scripts/capture.sh "build-agent" "implemented TDD workflow" \
+# run from the eh-evolve skill directory
+node dist/scripts/capture.js "build-agent" "implemented TDD workflow" \
   "Created tests before implementation for feature X" \
   "All tests passed, user confirmed approach was correct"
 ```
@@ -90,7 +95,7 @@ bash scripts/capture.sh "build-agent" "implemented TDD workflow" \
 When patterns emerge from observations:
 
 ```bash
-uv run scripts/create-unit.py "Prefer TDD workflow" \
+node dist/scripts/create-unit.js "Prefer TDD workflow" \
   "Always create tests before implementation" \
   0.85 "testing" "global" "obs-20260528-001" "obs-20260528-002"
 ```
@@ -100,7 +105,7 @@ uv run scripts/create-unit.py "Prefer TDD workflow" \
 When enough units exist in a domain:
 
 ```bash
-uv run scripts/synthesize.py
+node dist/scripts/synthesize.js
 ```
 
 ### 4. Review and apply
@@ -110,11 +115,12 @@ Review generated proposals in `./docs/evolve/proposals/`. Apply manually or with
 ## Gotchas
 
 - **notesmd-cli does not require Obsidian running** — the eh-run-notesmd-cli skill works headless. Scripts write directly to vault files as fallback if notesmd-cli is unavailable.
-- **Secrets are sanitized** by capture.sh (tokens, passwords, API keys redacted)
+- **Secrets are sanitized** by `capture.ts` (tokens, passwords, API keys redacted)
 - **Confidence decays** if a unit is never reinforced; review stale units periodically
 - **Scope defaults to project** — promote explicitly when pattern is cross-project
 - **Vault path** defaults to `{project_root}/docs/` (auto-detected by scripts); override with `OBSIDIAN_VAULT` env var
-- **Project location** is auto-detected in all three scripts (`capture.sh`, `create-unit.py`, `synthesize.py`) and stored in the `project_location` frontmatter field. Detection order: `EVOLVE_PROJECT_LOCATION` env var → `git rev-parse --show-toplevel` → `$PWD`. Override by setting `EVOLVE_PROJECT_LOCATION` in the environment.
+- **Project location** is auto-detected in all three scripts (`capture.ts`, `create-unit.ts`, `synthesize.ts`) and stored in the `project_location` frontmatter field. Detection order: `EVOLVE_PROJECT_LOCATION` env var → `git rev-parse --show-toplevel` → `$PWD`. Override by setting `EVOLVE_PROJECT_LOCATION` in the environment.
+- **Build before use** — the scripts are TypeScript sources; run the compiled `dist/scripts/*.js` output. `pnpm build` must run after a fresh clone or after editing `scripts/**/*.ts`. Tests run with Node's built-in runner: `node --test dist/evals/*.test.js`.
 
 ## Reference triggers
 
@@ -125,14 +131,20 @@ Review generated proposals in `./docs/evolve/proposals/`. Apply manually or with
 
 ## Available scripts
 
-- `scripts/capture.sh` — Record a sanitized observation. Usage: `bash scripts/capture.sh <agent> <action> <context> <outcome>`
-- `scripts/create-unit.py` — Create an evolution unit. Usage: `uv run scripts/create-unit.py <title> <action> <confidence> [domain] [scope] [evidence...]`
-- `scripts/synthesize.py` — Cluster units and generate proposals. Usage: `uv run scripts/synthesize.py`
+TypeScript sources live in `scripts/`; run the compiled output in `dist/scripts/`.
+
+- `scripts/capture.ts` → `dist/scripts/capture.js` — Record a sanitized observation. Usage: `node dist/scripts/capture.js <agent> <action> <context> <outcome>`
+- `scripts/create-unit.ts` → `dist/scripts/create-unit.js` — Create an evolution unit. Usage: `node dist/scripts/create-unit.js <title> <action> <confidence> [domain] [scope] [evidence...]`
+- `scripts/synthesize.ts` → `dist/scripts/synthesize.js` — Cluster units and generate proposals. Usage: `node dist/scripts/synthesize.js`
+
+Shared modules live in `scripts/lib/` (paths, sanitization, frontmatter parsing, note builders).
 
 ## Verification
 
 - [ ] Vault at `./docs/evolve/` exists with subfolders
-- [ ] `capture.sh` creates valid observation notes with sanitized content
-- [ ] `create-unit.py` produces valid frontmatter with all required fields
-- [ ] `synthesize.py` clusters units and generates proposals
+- [ ] `pnpm build` compiles `scripts/**/*.ts` and `evals/**/*.ts` into `dist/`
+- [ ] `node --test dist/evals/*.test.js` passes
+- [ ] `capture.ts` creates valid observation notes with sanitized content
+- [ ] `create-unit.ts` produces valid frontmatter with all required fields
+- [ ] `synthesize.ts` clusters units and generates proposals
 - [ ] All scripts exit cleanly with helpful error messages on invalid input

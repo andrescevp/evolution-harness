@@ -12,6 +12,9 @@ as the first-class surface.
   dependency is `@opencode/plugin`. Do not move the plugin into a subfolder.
 - `skills/<slug>/` — canonical SKILL.md skills (SKILL.md + bundled `scripts/`
   + `references/`). Platform-neutral; shared by every client.
+  `skills/eh-evolve/scripts/` holds TypeScript sources and `evals/` holds
+  `node:test` suites; both compile to `skills/eh-evolve/dist/` (gitignored).
+  Agents run the compiled `dist/scripts/*.js`, never the `.ts` sources.
   **Convention: all skill and agent names are prefixed with `eh-`**
   (`eh-evolve`, `eh-state-sync`, `eh-run-notesmd-cli`, `eh-evolver`,
   `eh-observer`). New evolution-harness skills/agents must follow the prefix;
@@ -32,8 +35,10 @@ as the first-class surface.
   OpenCode by the plugin; converted to TOML for agy by `install.sh`.
 - No generated directories or sub-packages (`core/`, `plugins/`,
   `opencode-plugin/`, marketplaces) — content at the root IS the plugin.
-  Do not reintroduce per-platform copies.
-- `install.sh` only creates symlinks (plus agy TOML conversion) — no copies.
+  The only generated directory is `skills/eh-evolve/dist/` (compiled skill
+  pipeline, gitignored). Do not reintroduce per-platform copies.
+- `install.sh` builds the skill pipeline, then creates symlinks (plus agy TOML
+  conversion) — no copies.
 
 ## Workflow
 
@@ -41,11 +46,16 @@ as the first-class surface.
 2. Run `bash scripts/validate.sh` — must pass before committing.
 3. Plugin code changes: `pnpm typecheck` (after `pnpm install --ignore-scripts`
    on fresh clones — pnpm 11 blocks dependency build scripts locally).
+4. Skill pipeline changes: `pnpm build` then `pnpm test` (build + compiled
+   `node:test` evals). The `dist/` output is never committed.
 
 ## Content rules
 
 - Skills stay platform-neutral: `SKILL.md` frontmatter uses `name` and
   `description`; body avoids client-specific syntax.
+- Skill pipeline scripts are TypeScript (ESM, `.js` import specifiers) compiled
+  with `tsconfig.skills.json`. Keep sources and evals under 300 lines; shared
+  logic goes in `skills/eh-evolve/scripts/lib/`.
 - Script resolution order documented in skills/agents: skill base directory →
   `$EVOLVE_HARNESS_ROOT/...` → legacy `~/.agents` fallback. Never hardcode
   `~/.agents` as the only path.
@@ -57,7 +67,8 @@ as the first-class surface.
 
 ## Platform validation references
 
-- OpenCode: `opencode-plugin/` typechecks via `pnpm typecheck`
+- OpenCode: the root plugin package typechecks via `pnpm typecheck`; the
+  plugin smoke test runs with `node scripts/test-plugin.ts`
 - Layout/content: `bash scripts/validate.sh`
 - agy: `agy plugin validate` does not apply (no plugin.json) — symlinked
   skills/agents are the native convention

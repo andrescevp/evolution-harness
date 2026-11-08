@@ -7,17 +7,17 @@ All evolve notes live under `./docs/evolve/` (relative to project root):
 ```
 docs/
   evolve/
-    observations/    ← Raw session observations (capture.sh)
-    units/           ← Distilled evolution units (create-unit.py)
-    clusters/        ← Grouped units by domain (synthesize.py)
-    proposals/       ← Generated synthesis proposals (synthesize.py)
+    observations/    ← Raw session observations (capture.ts)
+    units/           ← Distilled evolution units (create-unit.ts)
+    clusters/        ← Grouped units by domain (synthesize.ts)
+    proposals/       ← Generated synthesis proposals (synthesize.ts)
 ```
 
 ---
 
 ## Observation Schema
 
-Created by `scripts/capture.sh`. One observation per meaningful session event.
+Created by `scripts/capture.ts` (runtime: `dist/scripts/capture.js`). One observation per meaningful session event.
 
 ```yaml
 ---
@@ -51,7 +51,7 @@ outcome: "All tests passed"        # sanitized outcome description
 
 ## Evolution Unit Schema
 
-Created by `scripts/create-unit.py`. A distilled, confidence-weighted pattern extracted from one or more observations.
+Created by `scripts/create-unit.ts` (runtime: `dist/scripts/create-unit.js`). A distilled, confidence-weighted pattern extracted from one or more observations.
 
 ```yaml
 ---
@@ -97,7 +97,7 @@ created: 2026-05-28
 
 ## Synthesis Proposal Schema
 
-Created by `scripts/synthesize.py`. Groups related units and suggests concrete artifacts.
+Created by `scripts/synthesize.ts` (runtime: `dist/scripts/synthesize.js`). Groups related units and suggests concrete artifacts.
 
 ```yaml
 ---

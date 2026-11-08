@@ -85,7 +85,7 @@ async function loadSkills(root: string) {
       description: description || `${id} skill from the evolution harness`,
       path: dir as Skill.Info["path"],
       content:
-        `> Bundled by the evolution-harness plugin. Skill base directory (scripts/, references/): ${dir}\n\n` +
+        `> Bundled by the evolution-harness plugin. Skill base directory (scripts/, dist/scripts/, references/): ${dir}\n\n` +
         body,
     })
   }
@@ -120,6 +120,12 @@ export default Plugin.define({
     if (!root) {
       console.error(`[${PLUGIN_ID}] repository root not found — skills/commands not registered`)
       return
+    }
+
+    if (!existsSync(join(root, "skills", "eh-evolve", "dist", "scripts", "capture.js"))) {
+      console.warn(
+        `[${PLUGIN_ID}] eh-evolve pipeline not built — run "pnpm build" in ${root}`,
+      )
     }
 
     const [skills, commands] = await Promise.all([loadSkills(root), loadCommands(root)])

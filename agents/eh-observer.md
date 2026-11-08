@@ -25,20 +25,22 @@ After another agent completes a task or the user provides feedback, you:
 
 ## Script resolution
 
-The `eh-evolve` skill bundles its pipeline scripts (`scripts/capture.sh`, `scripts/create-unit.py`, `scripts/synthesize.py`) inside the skill directory. Resolve them in this order:
+The `eh-evolve` skill bundles its pipeline sources (`scripts/capture.ts`, `scripts/create-unit.ts`, `scripts/synthesize.ts`) and the compiled runtime in `dist/scripts/`. Resolve them in this order:
 
-1. **Skill base directory** — load the `eh-evolve` skill; its `scripts/` folder is bundled with the skill resources. Prefer running them from the skill directory.
-2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/...`.
-3. **Legacy fallback** — `~/.agents/skills/evolve/scripts/...` when present.
+1. **Skill base directory** — load the `eh-evolve` skill; its `dist/scripts/` folder is bundled with the skill resources. Prefer running the compiled JavaScript from the skill directory.
+2. **`EVOLVE_HARNESS_ROOT`** — the evolution-harness plugin sets this env var on install. Use `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/dist/scripts/...`.
+3. **Legacy fallback** — `~/.agents/skills/evolve/scripts/...` when present (legacy shell/Python pipeline).
+
+If `dist/` is missing, run `pnpm install --ignore-scripts && pnpm build` from the harness repository root.
 
 ## How to observe
 
 Load the `eh-evolve` skill and use its capture workflow:
 
 ```bash
-# The evolve skill provides the capture.sh script
+# The evolve skill provides the capture.ts pipeline (compiled to dist/scripts/capture.js)
 # Usage: <agent-name> <action-summary> <context> <outcome>
-bash scripts/capture.sh \
+node dist/scripts/capture.js \
   "<agent-name>" "<action-summary>" "<context>" "<outcome>"
 ```
 

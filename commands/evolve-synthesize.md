@@ -8,10 +8,12 @@ Run the synthesis pipeline via the `eh-evolve` skill:
 3. Generate synthesis proposals in `./docs/evolve/proposals/`
 4. Report clusters found and proposals generated
 
-The `eh-evolve` skill bundles `scripts/synthesize.py`. Resolve the skill's base directory as documented in the skill (skill resources, `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/scripts/`, or legacy `~/.agents/skills/evolve/scripts/`), then run:
+The `eh-evolve` skill bundles the TypeScript source `scripts/synthesize.ts` and its compiled runtime `dist/scripts/synthesize.js`. Resolve the skill's base directory as documented in the skill (skill resources or `$EVOLVE_HARNESS_ROOT/skills/eh-evolve/`), then run:
 
 ```bash
-uv run scripts/synthesize.py
+node dist/scripts/synthesize.js
 ```
+
+If `dist/` is missing, build the harness first from its repository root with `pnpm install --ignore-scripts && pnpm build`.
 
 After synthesis, review each proposal and ask whether to proceed with artifact generation. Only generate artifacts (skills, agents, commands) for high-confidence proposals (>= 0.7 avg confidence).

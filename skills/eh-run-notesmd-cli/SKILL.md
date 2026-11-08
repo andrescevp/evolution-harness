@@ -233,4 +233,4 @@ notesmd-cli set-default-vault --open-type editor
 - [notesmd-cli GitHub](https://github.com/Yakitrak/notesmd-cli)
 - `references/api-reference.md` — Local HTTP API fallback for complex operations
 - `references/metadata-management.md` — Frontmatter fields, relations, properties
-- `references/automation-scripts.md` — Shell scripts for daily standup, bulk tagging, reports
+- `references/automation-scripts.md` — TypeScript scripts for daily standup, bulk tagging, reports

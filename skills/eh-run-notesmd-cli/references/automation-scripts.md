@@ -1,87 +1,121 @@
 # Automation Scripts
 
+All examples are TypeScript for Node >= 22.18 (native type stripping) or the
+compiled JavaScript output. Run them from the directory where you save them.
+
 ## Daily standup log
 
-Save as `scripts/daily-standup.sh`:
+Save as `scripts/daily-standup.ts`:
 
-```bash
-#!/bin/bash
-# Append standup entry to daily note using notesmd-cli
-DATE=$(date +%Y-%m-%d)
-ENTRY="## Standup $DATE
-- Yesterday: $1
-- Today: $2
-- Blockers: ${3:-none}"
+```ts
+import { execFileSync } from "node:child_process"
 
-notesmd-cli daily --content "$ENTRY"
+const [yesterday = "", today = "", blockers = "none"] = process.argv.slice(2)
+const date = new Date().toISOString().slice(0, 10)
+const entry = `## Standup ${date}
+- Yesterday: ${yesterday}
+- Today: ${today}
+- Blockers: ${blockers}`
+
+execFileSync("notesmd-cli", ["daily", "--content", entry], { stdio: "inherit" })
 ```
 
-Usage: `./scripts/daily-standup.sh "Deployed v2.3" "Start refactor" "Waiting on API keys"`
+Usage: `node scripts/daily-standup.ts "Deployed v2.3" "Start refactor" "Waiting on API keys"`
 
 ## Bulk tag manager
 
-Save as `scripts/bulk-tag.sh`:
+Save as `scripts/bulk-tag.ts`:
 
-```bash
-#!/bin/bash
-# Add a tag to all notes matching a search term
-TAG="$1"
-SEARCH_TERM="$2"
-VAULT_PATH="${3:-$HOME/vaults/main}"
+```ts
+import { execFileSync } from "node:child_process"
 
-# Find matching files and add tag via frontmatter command
-notesmd-cli search-content "$SEARCH_TERM" --format json --no-interactive | \
-  python3 -c "
-import sys, json
-results = json.load(sys.stdin)
-for r in results:
-    name = r.get('name', '')
-    if name:
-        print(name)
-" | while read -r note; do
-  notesmd-cli frontmatter "$note" --edit --key "tags" --value "[$TAG]"
-  echo "Tagged: $note"
-done
+const [tag, searchTerm] = process.argv.slice(2)
+if (!tag || !searchTerm) {
+  console.error("Usage: node scripts/bulk-tag.ts <tag> <search-term> [vault]")
+  process.exit(1)
+}
+
+const vault = process.argv[4]
+const searchArgs = ["search-content", searchTerm, "--format", "json", "--no-interactive"]
+if (vault) searchArgs.push("--vault", vault)
+
+const results = JSON.parse(
+  execFileSync("notesmd-cli", searchArgs, { encoding: "utf8" }),
+) as Array<{ name?: string }>
+
+for (const result of results) {
+  if (!result.name) continue
+  execFileSync(
+    "notesmd-cli",
+    ["frontmatter", result.name, "--edit", "--key", "tags", "--value", `[${tag}]`],
+    { stdio: "inherit" },
+  )
+  console.log(`Tagged: ${result.name}`)
+}
 ```
 
 ## Metadata report
 
-Save as `scripts/metadata-report.sh`:
+Save as `scripts/metadata-report.ts`:
 
-```bash
-#!/bin/bash
-# Generate a report of all notes with metadata using notesmd-cli
-VAULT_PATH="${1:-$HOME/vaults/main}"
+```ts
+import { execFileSync } from "node:child_process"
+import { basename } from "node:path"
 
-echo "# Vault Metadata Report"
-echo "Generated: $(date)"
-echo ""
+const vaultPath = process.argv[2] ?? `${process.env.HOME}/vaults/main`
+const vault = basename(vaultPath)
 
-notesmd-cli list --vault "$(basename "$VAULT_PATH")" 2>/dev/null | while read -r note; do
-  [ -z "$note" ] && continue
-  TITLE=$(basename "$note" .md)
-  TAGS=$(notesmd-cli frontmatter "$note" --print 2>/dev/null | grep "^tags:" | cut -d' ' -f2- || echo "none")
-  echo "- **$TITLE** | tags: $TAGS"
-done
+console.log("# Vault Metadata Report")
+console.log(`Generated: ${new Date().toISOString()}`)
+console.log("")
+
+const notes = execFileSync("notesmd-cli", ["list", "--vault", vault], {
+  encoding: "utf8",
+})
+  .split("\n")
+  .filter(Boolean)
+
+for (const note of notes) {
+  const title = basename(note, ".md")
+  const frontmatter = execFileSync("notesmd-cli", ["frontmatter", note, "--print"], {
+    encoding: "utf8",
+  })
+  const tags =
+    frontmatter
+      .split("\n")
+      .find((line) => line.startsWith("tags:"))
+      ?.slice(5)
+      .trim() || "none"
+  console.log(`- **${title}** | tags: ${tags}`)
+}
 ```
 
 ## Create note from template
 
-Save as `scripts/template-note.sh`:
+Save as `scripts/template-note.ts`:
 
-```bash
-#!/bin/bash
-# Create a new note from a template file
-TEMPLATE="$1"
-NOTE_NAME="$2"
-TITLE="${3:-$NOTE_NAME}"
+```ts
+import { execFileSync } from "node:child_process"
+import { readFileSync } from "node:fs"
 
-if [ ! -f "$TEMPLATE" ]; then
-  echo "Template not found: $TEMPLATE"
-  exit 1
-fi
+const [template, noteName, title = noteName] = process.argv.slice(2)
+if (!template || !noteName) {
+  console.error("Usage: node scripts/template-note.ts <template> <note-name> [title]")
+  process.exit(1)
+}
 
-# Read template, replace placeholders, create note
-CONTENT=$(sed "s/{{TITLE}}/$TITLE/g; s/{{DATE}}/$(date +%Y-%m-%d)/g" "$TEMPLATE")
-notesmd-cli create "$NOTE_NAME" --content "$CONTENT" --open --editor
+let content: string
+try {
+  content = readFileSync(template, "utf8")
+} catch {
+  console.error(`Template not found: ${template}`)
+  process.exit(1)
+}
+
+const date = new Date().toISOString().slice(0, 10)
+content = content.replaceAll("{{TITLE}}", title).replaceAll("{{DATE}}", date)
+
+execFileSync("notesmd-cli", ["create", noteName, "--content", content, "--open", "--editor"], {
+  stdio: "inherit",
+})
 ```

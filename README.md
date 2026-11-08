@@ -20,7 +20,7 @@ Published at **github.com/andrescevp/evolution-harness** · tag **v1.0.0**.
 
 | Component | Name | What it does |
 |---|---|---|
-| Skill | `eh-evolve` | Full evolution pipeline: observation → unit → cluster → proposal. Bundled scripts: `capture.sh`, `create-unit.py`, `synthesize.py` |
+| Skill | `eh-evolve` | Full evolution pipeline: observation → unit → cluster → proposal. TypeScript sources `capture.ts`, `create-unit.ts`, `synthesize.ts` (compiled to `dist/scripts/`) |
 | Skill | `eh-state-sync` | Syncs `AGENTS.md`, architecture docs, and vault notes after a dev cycle; feeds learnings into the pipeline |
 | Skill | `eh-run-notesmd-cli` | Manages the evolution vault headless via `notesmd-cli` (no Obsidian GUI needed) |
 | Agent | `eh-observer` | After a task, captures sanitized observations into `./docs/evolve/observations/` |
@@ -36,19 +36,23 @@ evolution-harness/             ← the OpenCode V2 plugin package
 ├── index.ts                   ← Plugin.define: registers skills + commands at runtime
 ├── package.json               ← name: evolution-harness, exports "." -> ./index.ts
 ├── skills/                    ← canonical SKILL.md skills (platform-neutral standard)
-│   ├── eh-evolve/             ← SKILL.md + scripts/ + references/
+│   ├── eh-evolve/             ← SKILL.md + scripts/*.ts + evals/ + references/
+│   │   └── dist/              ← compiled runtime (pnpm build; gitignored)
 │   ├── eh-state-sync/
 │   └── eh-run-notesmd-cli/
 ├── agents/                    ← eh-observer.md, eh-evolver.md (OpenCode agent format)
 ├── commands/                  ← evolve-*.md (OpenCode slash-command format)
 ├── scripts/validate.sh        ← repository validation (layout, content, plugin integrity)
-├── scripts/test-plugin.mjs    ← functional smoke test for the plugin (mock ctx)
+├── scripts/test-plugin.ts     ← functional smoke test for the plugin (mock ctx)
+├── tsconfig.skills.json       ← builds skills/eh-evolve/scripts + evals into dist/
 ├── install.sh                 ← installs the same content into other clients (optional)
 └── AGENTS.md                  ← repo conventions for contributors
 ```
 
-No build step, no generated directories, no copies: the plugin, skills, agents,
-and commands live at the repository root and are consumed from there.
+The plugin entry (`index.ts`) needs no build: OpenCode loads TypeScript
+directly. The skill pipeline is TypeScript source compiled to
+`skills/eh-evolve/dist/scripts/*.js`; run `pnpm build` after a fresh clone or
+whenever `scripts/**/*.ts` changes.
 
 ---
 
@@ -62,6 +66,7 @@ git clone git@github.com:andrescevp/evolution-harness.git \
   ~/.config/opencode/plugins/evolution-harness
 cd ~/.config/opencode/plugins/evolution-harness
 pnpm install --ignore-scripts      # installs @opencode/plugin (see note)
+pnpm build                         # compiles the eh-evolve skill pipeline to dist/
 ln -sfn "$PWD/agents/eh-evolver.md" ~/.config/opencode/agents/eh-evolver.md
 ln -sfn "$PWD/agents/eh-observer.md" ~/.config/opencode/agents/eh-observer.md
 ```
@@ -106,13 +111,13 @@ everything still works.
 The evolution loop:
 
 1. **Capture** — after a meaningful session, ask `@eh-observer` to record what
-   worked (or run the skill's script directly):
+   worked (or run the skill's compiled script directly from the skill directory):
    ```bash
-   bash scripts/capture.sh "build-agent" "implemented TDD workflow" \
+   node dist/scripts/capture.js "build-agent" "implemented TDD workflow" \
      "Created tests before implementation for feature X" \
      "All tests passed, user confirmed approach was correct"
    ```
-2. **Distill** — `@eh-evolver` (or `create-unit.py`) turns observations into
+2. **Distill** — `@eh-evolver` (or `create-unit.ts`) turns observations into
    confidence-weighted units (`0.3` tentative → `0.9` certain).
 3. **Synthesize** — `/evolve-synthesize` clusters units by domain and generates
    proposals in `./docs/evolve/proposals/`.
@@ -135,7 +140,8 @@ Per the [OpenCode plugin docs](https://opencode.ai/v2/docs/build/plugins/):
 - `index.ts` defines `Plugin.define({ id: "evolution-harness", setup })`.
 - **Skills** → `ctx.skill.transform`: frontmatter parsed from each
   `skills/*/SKILL.md`, `path` set to the skill directory so bundled scripts and
-  references stay resolvable.
+  references stay resolvable. The `eh-evolve` skill ships TypeScript sources
+  plus the compiled `dist/scripts/` runtime.
 - **Commands** → `ctx.command.transform`: each `commands/*.md` becomes a slash
   command whose `execute` prompts the session with the command body.
 - The repository root is located from `$EVOLVE_HARNESS_ROOT`, the plugin
@@ -144,6 +150,22 @@ Per the [OpenCode plugin docs](https://opencode.ai/v2/docs/build/plugins/):
   symlink.
 
 ---
+
+## Upgrading the skill pipeline
+
+The plugin entry was already on the V2 API; the current package pins
+`@opencode/plugin` 2.2.3 and moves the skill pipeline to TypeScript compiled
+to `dist/`. This changes the script invocation paths:
+
+| Old invocation | New invocation |
+|---|---|
+| `bash scripts/capture.sh ...` | `node dist/scripts/capture.js ...` |
+| `uv run scripts/create-unit.py ...` | `node dist/scripts/create-unit.js ...` |
+| `uv run scripts/synthesize.py` | `node dist/scripts/synthesize.js` |
+
+Run `pnpm build` after pulling; `skills/eh-evolve/dist/` is generated and
+gitignored. Agents and commands resolve the compiled path from the skill
+directory.
 
 ## Additional clients
 
@@ -170,8 +192,10 @@ installs are cleaned up automatically.
 2. **Validate** before committing:
    ```bash
    bash scripts/validate.sh        # layout, content, frontmatter, plugin smoke test
-   pnpm typecheck                  # tsc --noEmit (after pnpm install --ignore-scripts)
-   node scripts/test-plugin.mjs    # functional smoke test (mock ctx)
+   pnpm typecheck                  # plugin + skill pipeline typecheck
+   pnpm build                      # compile skills/eh-evolve to dist/
+   pnpm test                       # build + node --test on the compiled evals
+   node scripts/test-plugin.ts     # functional plugin smoke test (mock ctx)
    ```
 3. **Push & release**:
    ```bash
@@ -187,7 +211,12 @@ installs are cleaned up automatically.
 
 > **Deps note**: `pnpm install --ignore-scripts` is required because pnpm 11
 > blocks dependency build scripts by default (supply-chain policy); nothing in
-> this package needs them. `@opencode/plugin` is pinned to `2.0.20`.
+> this package needs them. `@opencode/plugin` is pinned to `2.2.3`.
+>
+> **Runtime note**: the compiled skill scripts and compiled evals run on
+> Node 18+. The TypeScript toolchain and the plugin smoke test
+> (`node scripts/test-plugin.ts`, native type stripping) require Node >= 22.18
+> (Node 24 recommended).
 
 ## Naming conventions
 
